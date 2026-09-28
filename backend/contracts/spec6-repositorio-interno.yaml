@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: Repositorio Interno de Clientes - Resuelve
+  version: "1.1.0"
+  description: >-
+    Expone el historial interno de productos y pagos del cliente desde
+    PostgreSQL (tabla clientes_historial). Desacopla al core del esquema real
+    de base de datos: el core solo conoce HistorialCliente. Un 404 significa
+    exclusivamente cliente nuevo (sin historial); los fallos de base responden
+    503 dentro de 3500 ms, por debajo del timeout de 4000 ms del adaptador del
+    core. Fuente de verdad de los contratos request/response de este servicio.
+servers:
+  - url: http://repositorio-interno:8092
+    description: Red interna Docker
+  - url: http://localhost:8092
+    description: Local / desarrollo (host)
+paths:
+  /health:
+    get:
+      summary: Health check del servicio y de la base de datos
+      description: >-
+        Responde siempre 200 mientras el proceso este vivo; el campo database
+        indica por separado si PostgreSQL responde.
+      operationId: healthCheckRepositorioInterno
+      responses:
+        '200':
+          description: Proceso en ejecucion (ver database para el estado de la base)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "UP"
+                service: "repositorio-interno"
+                database: "UP"
+                timestamp: "2026-09-24T12:00:00.000Z"
+  /clientes/{identificacion}/historial:
+    get:
+      summary: Obtiene el historial interno de un cliente
+      description: >-
+        Busqueda por clave primaria. antiguedadMeses se calcula al consultar a
+        partir de la fecha de primer registro (meses completos).
+        Identificaciones de demostracion (datos semilla) - 1710000001 mora
+        vigente; 1720000002 buen historial; 1730000003 cliente nuevo (404);
+        1740000004 sin ingreso declarado; 1750000005 ingreso bajo.
+      operationId: obtenerHistorialCliente
+      parameters:
+        - name: identificacion
+          in: path
+          required: true
+          description: Cedula, RUC o identificador alfanumerico (se aplica trim).
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 20
+            pattern: '^[0-9A-Za-z-]{1,20}$'
+          example: "1720000002"
+      responses:
+        '200':
+          description: Historial encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialCliente'
+              examples:
+                buenHistorial:
+                  summary: Cliente con buen historial (1720000002)
+                  value:
+                    identificacion: "1720000002"
+                    tieneMoraVigente: false
+                    creditosPrevios: 6
+                    ingresosDeclarados: 1500
+                    antiguedadMeses: 68
+                moraVigente:
+                  summary: Cliente con mora vigente (1710000001)
+                  value:
+                    identificacion: "1710000001"
+                    tieneMoraVigente: true
+                    creditosPrevios: 3
+                    ingresosDeclarados: 900
+                    antiguedadMeses: 52
+                sinIngreso:
+                  summary: Cliente sin ingreso declarado (1740000004)
+                  value:
+                    identificacion: "1740000004"
+                    tieneMoraVigente: false
+                    creditosPrevios: 1
+                    ingresosDeclarados: null
+                    antiguedadMeses: 27
+        '400':
+          description: La identificacion no cumple el formato (no se consulta la base)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  code: "IDENTIFICACION_INVALIDA"
+                  message: "La identificación debe tener entre 1 y 20 caracteres alfanuméricos o guiones"
+        '404':
+          description: >-
+            Cliente sin historial previo (cliente nuevo). Es el UNICO caso que
+            responde 404; el cuerpo no incluye la identificacion.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  code: "CLIENTE_NO_ENCONTRADO"
+                  message: "El cliente no tiene historial interno"
+        '500':
+          description: Error no previsto (el detalle queda solo en el log del servicio)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  code: "ERROR_INTERNO"
+                  message: "Error interno en el repositorio"
+        '503':
+          description: >-
+            Base de datos no disponible: sin conexion en DB_CONEXION_TIMEOUT_MS
+            (1500 ms) o consulta cancelada tras DB_CONSULTA_TIMEOUT_MS (2000 ms).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  code: "REPOSITORIO_NO_DISPONIBLE"
+                  message: "El repositorio interno no está disponible temporalmente"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, database, timestamp]
+      properties:
+        status:
+          type: string
+          example: "UP"
+        service:
+          type: string
+          example: "repositorio-interno"
+        database:
+          type: string
+          enum: [UP, DOWN]
+        timestamp:
+          type: string
+          format: date-time
+    HistorialCliente:
+      type: object
+      required: [identificacion, tieneMoraVigente, creditosPrevios, ingresosDeclarados, antiguedadMeses]
+      additionalProperties: false
+      description: >-
+        Exactamente estos cinco campos; no incluye nombres, saldos ni
+        calificaciones internas.
+      properties:
+        identificacion:
+          type: string
+          maxLength: 20
+        tieneMoraVigente:
+          type: boolean
+          description: true si el cliente registra mora vigente en Resuelve.
+        creditosPrevios:
+          type: integer
+          minimum: 0
+        ingresosDeclarados:
+          type: number
+          nullable: true
+          minimum: 0
+          exclusiveMinimum: true
+          description: Ingreso mensual declarado (> 0), o null si no fue declarado. Nunca se envia como texto.
+        antiguedadMeses:
+          type: integer
+          minimum: 0
+          description: Meses completos desde el primer registro del cliente en Resuelve (calculado al consultar).
+    ErrorRespuesta:
+      type: object
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              enum:
+                - IDENTIFICACION_INVALIDA
+                - CLIENTE_NO_ENCONTRADO
+                - REPOSITORIO_NO_DISPONIBLE
+                - ERROR_INTERNO
+            message:
+              type: string
+              description: Texto sin detalles tecnicos (driver, SQL, tablas, hosts).

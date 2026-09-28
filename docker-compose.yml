@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: resuelve-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - BFF_POS_URL=http://bff-pos:8081
+      - BFF_AUDITORIA_URL=http://bff-auditoria:8082
+      - JWT_SECRET=supersecret_key_resuelve_openapi_2026
+    depends_on:
+      - bff-pos
+      - bff-auditoria
+    networks:
+      - resuelve-net
+
+  bff-pos:
+    build:
+      context: ./services/bff-pos
+      dockerfile: Dockerfile
+    container_name: resuelve-bff-pos
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - CORE_SERVICE_URL=http://servicio-evaluacion:8090
+    depends_on:
+      - servicio-evaluacion
+    networks:
+      - resuelve-net
+
+  bff-auditoria:
+    build:
+      context: ./services/bff-auditoria
+      dockerfile: Dockerfile
+    container_name: resuelve-bff-auditoria
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - AUDIT_SERVICE_URL=http://servicio-auditoria:8095
+    depends_on:
+      - servicio-auditoria
+    networks:
+      - resuelve-net
+
+  servicio-evaluacion:
+    build:
+      context: ./services/servicio-evaluacion
+      dockerfile: Dockerfile
+    container_name: resuelve-servicio-evaluacion
+    ports:
+      - "8090:8090"
+    environment:
+      - PORT=8090
+      - BURO_SERVICE_URL=http://buro-simulado:8091
+      - REPO_SERVICE_URL=http://repositorio-interno:8092
+      - AUDIT_SERVICE_URL=http://servicio-auditoria:8095
+    depends_on:
+      - buro-simulado
+      - repositorio-interno
+      - servicio-auditoria
+    networks:
+      - resuelve-net
+
+  buro-simulado:
+    build:
+      context: ./services/buro-simulado
+      dockerfile: Dockerfile
+    container_name: resuelve-buro-simulado
+    ports:
+      - "8091:8091"
+    environment:
+      - PORT=8091
+    networks:
+      - resuelve-net
+
+  repositorio-interno:
+    build:
+      context: ./services/repositorio-interno
+      dockerfile: Dockerfile
+    container_name: resuelve-repositorio-interno
+    ports:
+      - "8092:8092"
+    environment:
+      - PORT=8092
+    networks:
+      - resuelve-net
+
+  servicio-auditoria:
+    build:
+      context: ./services/servicio-auditoria
+      dockerfile: Dockerfile
+    container_name: resuelve-servicio-auditoria
+    ports:
+      - "8095:8095"
+    environment:
+      - PORT=8095
+    networks:
+      - resuelve-net
+
+networks:
+  resuelve-net:
+    driver: bridge

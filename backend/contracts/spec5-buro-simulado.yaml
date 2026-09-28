@@ -1,0 +1,245 @@
+openapi: 3.0.3
+info:
+  title: Simulador de Buró Externo - Resuelve
+  version: "1.0.0"
+  description: >-
+    Microservicio que simula un buró de crédito externo real.
+    Proporciona scoring crediticio determinístico, reporte de mora y escenarios de resiliencia
+    (NORMAL, LATENCIA_ALTA y CAIDO) para pruebas de tolerancia a fallos y circuit breaker.
+servers:
+  - url: http://localhost:8091
+    description: Servidor local / desarrollo
+  - url: http://buro-simulado.internal/v1
+    description: Servidor de red interna Docker
+
+paths:
+  /health:
+    get:
+      summary: Health Check del servicio
+      description: Verifica la disponibilidad operativa del microservicio.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Servicio saludable y en ejecución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "UP"
+                service: "buro-simulado"
+                timestamp: "2026-09-23T23:00:00.000Z"
+
+  /score/{identificacion}:
+    get:
+      summary: Consulta el score crediticio simulado de un cliente
+      description: >-
+        Calcula y retorna un score crediticio determinístico basado en el hash de la identificación,
+        junto con el estado de mora y deuda estimada.
+        El comportamiento varía según el escenario activo (NORMAL, LATENCIA_ALTA o CAIDO).
+      operationId: consultarScore
+      parameters:
+        - name: identificacion
+          in: path
+          required: true
+          description: Número de identificación o cédula del cliente a consultar (no puede estar vacía).
+          schema:
+            type: string
+            example: "1720000002"
+      responses:
+        '200':
+          description: Score crediticio obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScoreBuro'
+              example:
+                identificacion: "1720000002"
+                score: 720
+                moraExterna: false
+                reportadoEnMora: false
+                deudaExternaTotal: 0
+                fechaConsulta: "2026-09-23T23:00:00.000Z"
+                escenarioSimulado: "NORMAL"
+        '400':
+          description: Identificación inválida o vacía
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  message: "La identificacion es obligatoria y no puede estar vacia"
+                  code: "INVALID_IDENTIFICACION"
+        '503':
+          description: Buró no disponible (modo de fallo simulado CAIDO)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  message: "Servicio de buro de credito no disponible temporalmente (Escenario CAIDO)"
+                  code: "SERVICE_UNAVAILABLE"
+        '504':
+          description: Timeout simulado (latencia excesiva)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /admin/escenario:
+    get:
+      summary: Consulta el escenario simulado activo
+      description: Retorna el escenario en ejecución actualmente en memoria.
+      operationId: obtenerEscenario
+      responses:
+        '200':
+          description: Escenario actual retornado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  escenario:
+                    type: string
+                    enum: [NORMAL, LATENCIA_ALTA, CAIDO]
+              example:
+                escenario: "NORMAL"
+    post:
+      summary: Configura el escenario simulado
+      description: Permite alternar entre los modos NORMAL, LATENCIA_ALTA y CAIDO para pruebas de resiliencia y circuit breaker.
+      operationId: configurarEscenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscenarioInput'
+            example:
+              escenario: "LATENCIA_ALTA"
+      responses:
+        '200':
+          description: Escenario actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                  escenario:
+                    type: string
+                    enum: [NORMAL, LATENCIA_ALTA, CAIDO]
+              example:
+                mensaje: "Escenario actualizado exitosamente"
+                escenario: "LATENCIA_ALTA"
+        '400':
+          description: Escenario inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  message: "Escenario invalido. Permitidos: NORMAL, LATENCIA_ALTA, CAIDO"
+                  code: "INVALID_SCENARIO"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+        - timestamp
+      properties:
+        status:
+          type: string
+          example: "UP"
+        service:
+          type: string
+          example: "buro-simulado"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-09-23T23:00:00.000Z"
+
+    ScoreBuro:
+      type: object
+      required:
+        - identificacion
+        - score
+        - moraExterna
+        - deudaExternaTotal
+        - fechaConsulta
+        - escenarioSimulado
+      properties:
+        identificacion:
+          type: string
+          description: Cédula o número identificador del cliente
+          example: "1720000002"
+        score:
+          type: integer
+          minimum: 300
+          maximum: 850
+          description: Score crediticio determinístico en rango 300 - 850
+          example: 720
+        moraExterna:
+          type: boolean
+          description: Indica si el cliente registra morosidad en el buró externo
+          example: false
+        reportadoEnMora:
+          type: boolean
+          description: Alias compatible con contratos previos para mora externa
+          example: false
+        deudaExternaTotal:
+          type: number
+          description: Monto total de deuda externa reportada
+          example: 0
+        fechaConsulta:
+          type: string
+          format: date-time
+          description: Fecha y hora en que se procesó la consulta (ISO 8601)
+          example: "2026-09-23T23:00:00.000Z"
+        escenarioSimulado:
+          type: string
+          enum: [NORMAL, LATENCIA_ALTA, CAIDO]
+          description: Escenario que estaba activo durante la consulta
+          example: "NORMAL"
+
+    EscenarioInput:
+      type: object
+      properties:
+        escenario:
+          type: string
+          enum: [NORMAL, LATENCIA_ALTA, CAIDO]
+          description: Escenario a activar
+          example: "NORMAL"
+        modo:
+          type: string
+          enum: [NORMAL, LATENCIA_ALTA, CAIDO]
+          description: Alias alternativo para escenario
+          example: "NORMAL"
+        latenciaMs:
+          type: integer
+          description: Retraso en milisegundos cuando el modo es LATENCIA_ALTA (opcional)
+          example: 5000
+
+    ErrorRespuesta:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - message
+            - code
+          properties:
+            message:
+              type: string
+              example: "Escenario invalido. Permitidos: NORMAL, LATENCIA_ALTA, CAIDO"
+            code:
+              type: string
+              example: "INVALID_SCENARIO"

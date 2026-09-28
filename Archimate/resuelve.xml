@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model xmlns="http://www.opengroup.org/xsd/archimate/3.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" identifier="id-model-resuelve">
+  <name xml:lang="es">Resuelve - API de Evaluación de Crédito</name>
+
+  <elements>
+    <element identifier="id-1001" xsi:type="Driver">
+      <name xml:lang="es">Presión competitiva por reducir el tiempo de decisión crediticia</name>
+    </element>
+    <element identifier="id-1002" xsi:type="Goal">
+      <name xml:lang="es">Automatizar la aprobación de crédito de bajo/mediano monto</name>
+    </element>
+    <element identifier="id-1003" xsi:type="Outcome">
+      <name xml:lang="es">95% de solicitudes resueltas en menos de 3s; 60% sin consultar buró externo; soporte a 5000 solicitudes concurrentes</name>
+    </element>
+
+    <element identifier="id-1004" xsi:type="BusinessActor">
+      <name xml:lang="es">Tienda Afiliada / Canal de Venta</name>
+    </element>
+    <element identifier="id-1005" xsi:type="BusinessProcess">
+      <name xml:lang="es">Otorgar crédito en punto de venta / canal digital</name>
+    </element>
+
+    <element identifier="id-1006" xsi:type="ApplicationInterface">
+      <name xml:lang="es">API Evaluación de Crédito (REST) /v1/evaluaciones-credito</name>
+    </element>
+    <element identifier="id-1007" xsi:type="ApplicationService">
+      <name xml:lang="es">Servicio de Evaluación de Riesgo Crediticio</name>
+    </element>
+    <element identifier="id-1008" xsi:type="ApplicationComponent">
+      <name xml:lang="es">MotorDeReglasCredito</name>
+    </element>
+    <element identifier="id-1009" xsi:type="ApplicationComponent">
+      <name xml:lang="es">AdapterBuroExterno</name>
+    </element>
+    <element identifier="id-1010" xsi:type="ApplicationComponent">
+      <name xml:lang="es">AdapterRepositorioInterno</name>
+    </element>
+    <element identifier="id-1011" xsi:type="ApplicationComponent">
+      <name xml:lang="es">ServicioAuditoria</name>
+    </element>
+    <element identifier="id-1012" xsi:type="ApplicationComponent">
+      <name xml:lang="es">Sistema Externo Buró de Crédito (fuera de alcance)</name>
+    </element>
+
+    <element identifier="id-1013" xsi:type="Node">
+      <name xml:lang="es">Clúster en la Nube (Kubernetes)</name>
+    </element>
+    <element identifier="id-1014" xsi:type="Node">
+      <name xml:lang="es">Infraestructura del Buró Externo</name>
+    </element>
+    <element identifier="id-1015" xsi:type="Artifact">
+      <name xml:lang="es">BD Relacional (Historial Interno de Clientes)</name>
+    </element>
+    <element identifier="id-1016" xsi:type="Artifact">
+      <name xml:lang="es">Almacén de Auditoría (NoSQL)</name>
+    </element>
+  </elements>
+
+  <relationships>
+    <relationship identifier="id-2001" source="id-1001" target="id-1002" xsi:type="Influence"/>
+    <relationship identifier="id-2002" source="id-1002" target="id-1003" xsi:type="Association"/>
+    <relationship identifier="id-2003" source="id-1004" target="id-1005" xsi:type="Assignment"/>
+    <relationship identifier="id-2004" source="id-1005" target="id-1003" xsi:type="Realization"/>
+    <relationship identifier="id-2005" source="id-1007" target="id-1005" xsi:type="Serving"/>
+    <relationship identifier="id-2006" source="id-1008" target="id-1007" xsi:type="Realization"/>
+    <relationship identifier="id-2007" source="id-1008" target="id-1006" xsi:type="Assignment"/>
+    <relationship identifier="id-2008" source="id-1006" target="id-1004" xsi:type="Serving"/>
+    <relationship identifier="id-2009" source="id-1009" target="id-1008" xsi:type="Serving"/>
+    <relationship identifier="id-2010" source="id-1010" target="id-1008" xsi:type="Serving"/>
+    <relationship identifier="id-2011" source="id-1008" target="id-1011" xsi:type="Triggering"/>
+    <relationship identifier="id-2012" source="id-1012" target="id-1009" xsi:type="Serving"/>
+    <relationship identifier="id-2013" source="id-1010" target="id-1015" xsi:type="Access"/>
+    <relationship identifier="id-2014" source="id-1011" target="id-1016" xsi:type="Access"/>
+    <relationship identifier="id-2015" source="id-1013" target="id-1008" xsi:type="Assignment"/>
+    <relationship identifier="id-2016" source="id-1013" target="id-1010" xsi:type="Assignment"/>
+    <relationship identifier="id-2017" source="id-1013" target="id-1011" xsi:type="Assignment"/>
+    <relationship identifier="id-2018" source="id-1014" target="id-1012" xsi:type="Assignment"/>
+  </relationships>
+</model>
+ 

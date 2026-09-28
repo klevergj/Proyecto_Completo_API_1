@@ -1,0 +1,36 @@
+# Configuracion local para ejecucion de microservicios
+services:
+  gateway:
+    command: npm start
+    environment:
+      NODE_ENV: production
+
+  bff-punto-venta:
+    command: npm start
+    environment:
+      NODE_ENV: production
+
+  bff-auditoria:
+    command: npm start
+    environment:
+      NODE_ENV: production
+
+  evaluacion-core:
+    command: npm start
+    environment:
+      NODE_ENV: production
+
+  buro-simulado:
+    command: npm start
+    environment:
+      NODE_ENV: production
+
+  repositorio-interno:
+    command: npm start
+    environment:
+      NODE_ENV: production
+
+  auditoria:
+    command: npm start
+    environment:
+      NODE_ENV: production

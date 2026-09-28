@@ -1,0 +1,257 @@
+openapi: 3.0.3
+info:
+  title: BFF Auditoria - Resuelve
+  version: "1.1.0"
+  description: >-
+    Backend for Frontend para el panel interno de analistas y auditores.
+    Consume al Servicio de Auditoria (spec7 v1.1.0). El listado devuelve un
+    resumen liviano y siempre pagina; el detalle completo de una evaluacion
+    (score del buro, reglas aplicadas, consulta al buro, datos de la
+    solicitud) se obtiene en /evaluaciones/{id}/detalle. El Gateway reenvia
+    /auditoria/* a este servicio sin el prefijo. Fuente de verdad de los
+    contratos request/response de este servicio.
+servers:
+  - url: http://bff-auditoria:8082
+    description: Red interna Docker
+  - url: http://localhost:8082
+    description: Local / desarrollo (host)
+paths:
+  /health:
+    get:
+      summary: Health check del servicio
+      operationId: healthCheckBffAuditoria
+      responses:
+        '200':
+          description: Servicio en ejecucion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /evaluaciones:
+    get:
+      summary: Lista evaluaciones (resumen) con filtros y paginacion
+      operationId: listarEvaluacionesAuditoria
+      parameters:
+        - name: estado
+          in: query
+          schema: { type: string, enum: [APROBADO, RECHAZADO, REVISION_MANUAL] }
+        - name: fechaDesde
+          in: query
+          description: Dia UTC inicial (inclusive)
+          schema: { type: string, format: date }
+        - name: fechaHasta
+          in: query
+          description: Dia UTC final (inclusive)
+          schema: { type: string, format: date }
+        - name: tiendaId
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          description: Indice de pagina, base 0
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          description: Tamano de pagina (maximo configurable, por defecto 100)
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Pagina de resumenes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaResumenAuditoria'
+              example:
+                total: 42
+                page: 0
+                size: 20
+                totalPaginas: 3
+                items:
+                  - idEvaluacion: "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+                    fecha: "2026-09-24T12:00:00.000Z"
+                    decision: "APROBADO"
+                    tiendaId: "TIENDA-001"
+                    consultaBuroRealizada: false
+        '400':
+          $ref: '#/components/responses/ParametroInvalido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '502':
+          $ref: '#/components/responses/ErrorAuditoria'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '#/components/responses/AuditoriaTimeout'
+  /evaluaciones/{id}/detalle:
+    get:
+      summary: Detalle completo de una evaluacion para el analista
+      description: >-
+        Incluye datos que el Frontend Tiendas nunca ve (scoreBuro,
+        reglasAplicadas, consultaBuroRealizada, datos de la solicitud). Los
+        campos opcionales no registrados se devuelven como null.
+      operationId: obtenerDetalleAuditoria
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Detalle completo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetalleAuditoria'
+              example:
+                idEvaluacion: "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+                fecha: "2026-09-24T12:00:00.000Z"
+                decision: "REVISION_MANUAL"
+                tiendaId: "TIENDA-001"
+                consultaBuroRealizada: true
+                identificacion: "1730000003"
+                montoSolicitado: 1200
+                plazoMeses: 12
+                motivo: "Cliente nuevo sin historial interno con buen score externo (score 742 >= umbral 700); requiere revision manual"
+                scoreBuro: 742
+                reglasAplicadas: ["REGLA_MORA_VIGENTE", "REGLA_CAPACIDAD_PAGO", "REGLA_SCORE_BURO", "REGLA_CLIENTE_NUEVO"]
+                registradoEn: "2026-09-24T12:00:00.120Z"
+        '400':
+          $ref: '#/components/responses/ParametroInvalido'
+        '404':
+          description: No existe la evaluacion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+              example:
+                error:
+                  code: "EVALUACION_NO_ENCONTRADA"
+                  message: "No encontramos esa evaluacion en auditoria"
+                  reintentable: false
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '502':
+          $ref: '#/components/responses/ErrorAuditoria'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '#/components/responses/AuditoriaTimeout'
+components:
+  responses:
+    ParametroInvalido:
+      description: Filtros, paginacion o id invalidos (no se consulta al Servicio de Auditoria)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+          example:
+            error:
+              code: "PARAMETRO_INVALIDO"
+              message: "fechaDesde no puede ser posterior a fechaHasta"
+              reintentable: false
+    ErrorInterno:
+      description: Error no previsto (detalle solo en el log)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+          example:
+            error: { code: "ERROR_INTERNO", message: "Ocurrio un error inesperado. Intenta nuevamente.", reintentable: true }
+    ErrorAuditoria:
+      description: El Servicio de Auditoria respondio 5xx o una respuesta fuera de contrato
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+          example:
+            error: { code: "ERROR_AUDITORIA", message: "No pudimos obtener la informacion de auditoria. Intenta nuevamente.", reintentable: true }
+    ServicioNoDisponible:
+      description: El Servicio de Auditoria no es alcanzable o respondio 503
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+          example:
+            error: { code: "SERVICIO_NO_DISPONIBLE", message: "El servicio de auditoria no esta disponible. Intenta nuevamente en unos minutos.", reintentable: true }
+    AuditoriaTimeout:
+      description: El Servicio de Auditoria no respondio en AUDITORIA_TIMEOUT_MS (3000 ms)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+          example:
+            error: { code: "AUDITORIA_TIMEOUT", message: "La consulta esta tardando mas de lo normal. Intenta nuevamente.", reintentable: true }
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, timestamp]
+      properties:
+        status: { type: string, example: "UP" }
+        service: { type: string, example: "bff-auditoria" }
+        timestamp: { type: string, format: date-time }
+    ResumenAuditoria:
+      type: object
+      required: [idEvaluacion, fecha, decision, tiendaId, consultaBuroRealizada]
+      additionalProperties: false
+      description: Elemento liviano del listado (sin motivo, reglas, score ni datos del cliente)
+      properties:
+        idEvaluacion: { type: string, format: uuid }
+        fecha: { type: string, format: date-time }
+        decision: { type: string, enum: [APROBADO, RECHAZADO, REVISION_MANUAL] }
+        tiendaId: { type: string, nullable: true }
+        consultaBuroRealizada: { type: boolean }
+    DetalleAuditoria:
+      type: object
+      required: [idEvaluacion, fecha, decision, tiendaId, consultaBuroRealizada, identificacion, montoSolicitado, plazoMeses, motivo, scoreBuro, reglasAplicadas, registradoEn]
+      additionalProperties: false
+      properties:
+        idEvaluacion: { type: string, format: uuid }
+        fecha: { type: string, format: date-time }
+        decision: { type: string, enum: [APROBADO, RECHAZADO, REVISION_MANUAL] }
+        tiendaId: { type: string, nullable: true }
+        consultaBuroRealizada:
+          type: boolean
+          description: Si fue necesario consultar el buro externo o se resolvio solo con reglas internas
+        identificacion: { type: string, nullable: true }
+        montoSolicitado: { type: number, nullable: true }
+        plazoMeses: { type: integer, nullable: true }
+        motivo: { type: string, nullable: true }
+        scoreBuro: { type: integer, nullable: true }
+        reglasAplicadas:
+          type: array
+          description: Reglas evaluadas por el core, en orden de ejecucion
+          items: { type: string }
+        registradoEn: { type: string, format: date-time, nullable: true }
+    PaginaResumenAuditoria:
+      type: object
+      required: [total, page, size, totalPaginas, items]
+      properties:
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1 }
+        totalPaginas: { type: integer, minimum: 0, description: "ceil(total / size); 0 si total es 0" }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResumenAuditoria'
+    ErrorRespuestaAuditoria:
+      type: object
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message, reintentable]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              enum:
+                - PARAMETRO_INVALIDO
+                - EVALUACION_NO_ENCONTRADA
+                - AUDITORIA_TIMEOUT
+                - SERVICIO_NO_DISPONIBLE
+                - ERROR_AUDITORIA
+                - ERROR_INTERNO
+            message: { type: string }
+            reintentable: { type: boolean }

@@ -1,0 +1,230 @@
+{
+  "info": {
+    "name": "Resuelve API - Colección de Microservicios",
+    "_postman_id": "8a71b4e0-3bf0-4f51-a902-resuelve001",
+    "description": "Colección de endpoints para probar los microservicios del sistema de evaluación de crédito Resuelve",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. API Gateway (:8080) /v1",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayUrl}}/health"
+          }
+        },
+        {
+          "name": "POST /v1/evaluaciones-credito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cuerpo = pm.response.json();",
+                  "if (cuerpo.idEvaluacion) pm.collectionVariables.set(\"idEvaluacion\", cuerpo.idEvaluacion);",
+                  "pm.test(\"ResultadoPos\", () => pm.expect(cuerpo).to.have.keys([\"idEvaluacion\", \"aprobado\", \"mensajeParaCliente\"]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gatewayToken}}",
+                "description": "Opcional mientras AUTH_HABILITADA=false"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identificacion\": \"1720000002\",\n  \"montoSolicitado\": 450,\n  \"plazoMeses\": 12,\n  \"tiendaId\": \"CENTRO-SUR-01\"\n}"
+            },
+            "url": "{{gatewayUrl}}/v1/evaluaciones-credito"
+          }
+        },
+        {
+          "name": "GET /v1/evaluaciones-credito/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gatewayToken}}",
+                "description": "Opcional mientras AUTH_HABILITADA=false"
+              }
+            ],
+            "url": "{{gatewayUrl}}/v1/evaluaciones-credito/{{idEvaluacion}}"
+          }
+        },
+        {
+          "name": "GET /v1/auditoria/evaluaciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gatewayToken}}",
+                "description": "Opcional mientras AUTH_HABILITADA=false"
+              }
+            ],
+            "url": "{{gatewayUrl}}/v1/auditoria/evaluaciones?page=0&size=10"
+          }
+        },
+        {
+          "name": "GET /v1/auditoria/evaluaciones/{id}/detalle",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gatewayToken}}",
+                "description": "Opcional mientras AUTH_HABILITADA=false"
+              }
+            ],
+            "url": "{{gatewayUrl}}/v1/auditoria/evaluaciones/{{idEvaluacion}}/detalle"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. BFF Punto de Venta (:8081)",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8081/health"
+          }
+        },
+        {
+          "name": "POST /evaluaciones-credito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identificacion\": \"1720000002\",\n  \"montoSolicitado\": 800,\n  \"plazoMeses\": 6\n}"
+            },
+            "url": "http://localhost:8081/evaluaciones-credito"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. BFF Auditoría (:8082)",
+      "item": [
+        {
+          "name": "GET /evaluaciones",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8082/evaluaciones?page=0&size=10"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Evaluación Core (:8090)",
+      "item": [
+        {
+          "name": "POST /evaluar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identificacion\": \"1720000002\",\n  \"montoSolicitado\": 1500,\n  \"plazoMeses\": 24\n}"
+            },
+            "url": "http://localhost:8090/evaluar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Buró Simulado (:8091)",
+      "item": [
+        {
+          "name": "GET /score/:id",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8091/score/1720000002"
+          }
+        },
+        {
+          "name": "POST /admin/escenario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"escenario\": \"LATENCIA_ALTA\"\n}"
+            },
+            "url": "http://localhost:8091/admin/escenario"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Repositorio Interno (:8092)",
+      "item": [
+        {
+          "name": "GET /clientes/:id/historial",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8092/clientes/1720000002/historial"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Auditoría (:8095)",
+      "item": [
+        {
+          "name": "GET /registros",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8095/registros"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "gatewayUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "gatewayToken",
+      "value": "",
+      "description": "Token OAuth2 client_credentials; vacio mientras AUTH_HABILITADA=false"
+    },
+    {
+      "key": "idEvaluacion",
+      "value": ""
+    }
+  ]
+}

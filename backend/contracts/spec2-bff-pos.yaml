@@ -1,0 +1,302 @@
+openapi: 3.0.3
+info:
+  title: BFF Punto de Venta - Resuelve
+  version: "1.1.0"
+  description: >-
+    Backend for Frontend para el flujo de aprobacion de credito en tienda.
+    Recibe la solicitud desde el API Gateway, la valida y la traduce a la
+    SolicitudCore del Servicio de Evaluacion (core, Spec 4), y reduce la
+    DecisionCore a un ResultadoPos de tres campos para mostrarse en caja.
+    Mantiene una cache en memoria (TTL + LRU) para las reconsultas de estado y
+    traduce cualquier fallo del core a un ErrorRespuestaPos comprensible, sin
+    detalles tecnicos. No reintenta POST /evaluar (operacion no idempotente).
+    Fuente de verdad de los contratos request/response de este servicio.
+servers:
+  - url: http://bff-punto-venta:8081
+    description: Red interna Docker
+  - url: http://localhost:8081
+    description: Local / desarrollo (host)
+paths:
+  /health:
+    get:
+      summary: Health check del servicio
+      operationId: healthCheckBffPos
+      responses:
+        '200':
+          description: Servicio saludable y en ejecucion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "UP"
+                service: "bff-punto-venta"
+                timestamp: "2026-09-24T12:00:00.000Z"
+  /evaluaciones-credito:
+    post:
+      summary: Crea una evaluacion de credito para el punto de venta
+      description: >-
+        Valida la solicitud (una solicitud invalida se rechaza con 400 sin
+        llamar al core), envia al core solo los campos del contrato
+        (identificacion y tiendaId sin espacios al inicio ni al final) y
+        responde el ResultadoPos. El resultado queda en cache para las
+        reconsultas.
+      operationId: crearEvaluacionPos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudEvaluacionPos'
+            example:
+              identificacion: "1720000002"
+              montoSolicitado: 450
+              plazoMeses: 12
+              tiendaId: "TIENDA-001"
+      responses:
+        '200':
+          description: Resultado simplificado para mostrar en caja
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoPos'
+              examples:
+                aprobado:
+                  summary: Credito aprobado
+                  value:
+                    idEvaluacion: "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+                    aprobado: true
+                    mensajeParaCliente: "Crédito aprobado"
+                revision:
+                  summary: Revision manual
+                  value:
+                    idEvaluacion: "3f2504e0-4f89-41d3-9a0c-0305e82c3302"
+                    aprobado: false
+                    mensajeParaCliente: "En revisión, te contactaremos"
+                rechazado:
+                  summary: Credito rechazado
+                  value:
+                    idEvaluacion: "3f2504e0-4f89-41d3-9a0c-0305e82c3303"
+                    aprobado: false
+                    mensajeParaCliente: "Crédito no aprobado en esta ocasión"
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '502':
+          $ref: '#/components/responses/ErrorEvaluacion'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '#/components/responses/EvaluacionTimeout'
+  /evaluaciones-credito/{id}:
+    get:
+      summary: Consulta rapida de estado para mostrar en pantalla de caja
+      description: >-
+        Cache-Aside: si el ResultadoPos esta en cache y vigente (CACHE_TTL_MS,
+        por defecto 15 min) se responde sin llamar al core; si no, se consulta
+        GET /evaluaciones/{id} del core, se traduce y se guarda en cache. La
+        cache es local a cada instancia del BFF.
+      operationId: obtenerEstadoPos
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Estado simplificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoPos'
+              example:
+                idEvaluacion: "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+                aprobado: true
+                mensajeParaCliente: "Crédito aprobado"
+        '400':
+          description: El id no tiene formato UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuestaPos'
+              example:
+                error:
+                  code: "ID_EVALUACION_INVALIDO"
+                  message: "El identificador de evaluación no es válido"
+                  reintentable: false
+        '404':
+          description: El core no tiene una evaluacion con ese id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuestaPos'
+              example:
+                error:
+                  code: "EVALUACION_NO_ENCONTRADA"
+                  message: "No encontramos esa evaluación"
+                  reintentable: false
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '502':
+          $ref: '#/components/responses/ErrorEvaluacion'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '#/components/responses/EvaluacionTimeout'
+components:
+  responses:
+    SolicitudInvalida:
+      description: >-
+        Solicitud invalida: JSON mal formado, campo ausente o fuera de rango
+        (detectado por el BFF, sin llamar al core) o identificacion rechazada
+        por el core. El message nombra los campos invalidos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaPos'
+          example:
+            error:
+              code: "SOLICITUD_INVALIDA"
+              message: "El plazo en meses debe ser un número entero mayor que cero"
+              reintentable: false
+    ErrorInterno:
+      description: Error no previsto dentro del BFF (el detalle queda solo en el log)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaPos'
+          example:
+            error:
+              code: "ERROR_INTERNO"
+              message: "Ocurrió un error inesperado. Intenta nuevamente."
+              reintentable: true
+    ErrorEvaluacion:
+      description: El core respondio 5xx o una DecisionCore invalida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaPos'
+          example:
+            error:
+              code: "ERROR_EVALUACION"
+              message: "No pudimos completar la evaluación. Intenta nuevamente."
+              reintentable: true
+    ServicioNoDisponible:
+      description: El core no es alcanzable (conexion rechazada, DNS, conexion reiniciada)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaPos'
+          example:
+            error:
+              code: "SERVICIO_NO_DISPONIBLE"
+              message: "El servicio de evaluación no está disponible. Intenta nuevamente en unos minutos."
+              reintentable: true
+    EvaluacionTimeout:
+      description: El core no respondio dentro de CORE_TIMEOUT_MS (por defecto 5000 ms)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaPos'
+          example:
+            error:
+              code: "EVALUACION_TIMEOUT"
+              message: "La evaluación está tardando más de lo normal. Intenta nuevamente en unos segundos."
+              reintentable: true
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, timestamp]
+      properties:
+        status:
+          type: string
+          example: "UP"
+        service:
+          type: string
+          example: "bff-punto-venta"
+        timestamp:
+          type: string
+          format: date-time
+    SolicitudEvaluacionPos:
+      type: object
+      required: [identificacion, montoSolicitado, plazoMeses, tiendaId]
+      description: >-
+        Los campos adicionales se ignoran y no se envian al core. No hay
+        coercion de tipos (un monto "450" como texto se rechaza).
+      properties:
+        identificacion:
+          type: string
+          minLength: 1
+          description: Cedula o identificador del cliente. No puede estar vacia (se aplica trim).
+          example: "1720000002"
+        montoSolicitado:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: Monto de credito solicitado (numero finito mayor que 0).
+          example: 450
+        plazoMeses:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          description: Plazo del credito en meses (entero mayor que 0).
+          example: 12
+        tiendaId:
+          type: string
+          minLength: 1
+          description: Identifica la tienda que origina la venta (para trazabilidad). No puede estar vacia.
+          example: "TIENDA-001"
+    ResultadoPos:
+      type: object
+      required: [idEvaluacion, aprobado, mensajeParaCliente]
+      additionalProperties: false
+      description: >-
+        Version reducida de la DecisionCore, pensada para mostrarse en pantalla
+        de caja en 1-2 lineas. No expone motivo, reglasAplicadas ni
+        consultaBuroRealizada.
+      properties:
+        idEvaluacion:
+          type: string
+          format: uuid
+          description: Igual al idEvaluacion de la DecisionCore.
+        aprobado:
+          type: boolean
+          description: true si y solo si la decision del core es APROBADO.
+        mensajeParaCliente:
+          type: string
+          description: >-
+            Texto corto y humano que depende solo de la decision:
+            APROBADO -> "Crédito aprobado";
+            REVISION_MANUAL -> "En revisión, te contactaremos";
+            RECHAZADO -> "Crédito no aprobado en esta ocasión".
+          enum:
+            - "Crédito aprobado"
+            - "En revisión, te contactaremos"
+            - "Crédito no aprobado en esta ocasión"
+    ErrorRespuestaPos:
+      type: object
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message, reintentable]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              enum:
+                - SOLICITUD_INVALIDA
+                - ID_EVALUACION_INVALIDO
+                - EVALUACION_NO_ENCONTRADA
+                - EVALUACION_TIMEOUT
+                - SERVICIO_NO_DISPONIBLE
+                - ERROR_EVALUACION
+                - ERROR_INTERNO
+            message:
+              type: string
+              description: Texto en lenguaje humano, apto para mostrarse en caja.
+            reintentable:
+              type: boolean
+              description: Indica a la UI si puede ofrecer reintentar. El BFF no reintenta por su cuenta.

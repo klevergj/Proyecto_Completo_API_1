@@ -1,0 +1,693 @@
+# ---------------------------------------------------------------------------
+# GENERADO AUTOMATICAMENTE desde contracts/spec1-gateway.yaml - NO EDITAR.
+# Regenerar con: cd services/gateway && npm run contrato:frontend
+# ---------------------------------------------------------------------------
+openapi: 3.0.3
+info:
+  title: Contrato Frontend - Resuelve
+  version: 1.1.0
+  description: |-
+    Contrato que consume el Frontend (Tiendas y Panel de Auditoria). Es el contrato
+    publico del API Gateway (spec1) con los esquemas de los BFFs incluidos, en un solo
+    archivo. Base URL: /v1 del Gateway.
+
+    Flujos:
+    - Punto de Venta: POST /evaluaciones-credito -> ResultadoPos; GET /evaluaciones-credito/{id} para reconsultar.
+    - Panel de Auditoria: GET /auditoria/evaluaciones (resumen paginado) y GET /auditoria/evaluaciones/{id}/detalle.
+
+    Autenticacion: OAuth2 client_credentials (Bearer). Mientras el Gateway corra con
+    AUTH_HABILITADA=false, el token no se exige (se puede omitir la cabecera Authorization).
+
+    Errores: siempre { error: { code, message, reintentable } }; usar `reintentable` para
+    mostrar u ocultar la opcion de reintentar. Cabeceras utiles: X-Request-Id (soporte) y API-Version.
+servers:
+  - url: /v1
+    description: Gateway que sirve esta documentacion
+  - url: http://localhost:8080/v1
+    description: Local (Docker Compose)
+  - url: https://api.resuelve.com/v1
+    description: Produccion
+security:
+  - OAuth2: []
+tags:
+  - name: Punto de Venta
+    description: Pantalla de caja del Frontend Tiendas (evaluar y reconsultar credito)
+  - name: Panel de Auditoria
+    description: Panel interno de analistas (listado y detalle de evaluaciones)
+paths:
+  /evaluaciones-credito:
+    post:
+      tags:
+        - Punto de Venta
+      summary: Solicita una evaluacion de credito (BFF Punto de Venta)
+      operationId: crearEvaluacion
+      security:
+        - OAuth2:
+            - evaluaciones:escribir
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudEvaluacionPos'
+            examples:
+              aprobado:
+                summary: Buen historial y monto bajo (aprobado sin consultar buro)
+                value:
+                  identificacion: '1720000002'
+                  montoSolicitado: 450
+                  plazoMeses: 12
+                  tiendaId: TIENDA-001
+              rechazado:
+                summary: Cliente con mora vigente (rechazado)
+                value:
+                  identificacion: '1710000001'
+                  montoSolicitado: 800
+                  plazoMeses: 12
+                  tiendaId: TIENDA-001
+              revision:
+                summary: Cuota mayor al 35 % del ingreso (revision manual)
+                value:
+                  identificacion: '1750000005'
+                  montoSolicitado: 1200
+                  plazoMeses: 6
+                  tiendaId: TIENDA-002
+      responses:
+        '200':
+          description: Resultado simplificado para mostrar en caja
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+            API-Version:
+              $ref: '#/components/headers/API-Version'
+            X-Response-Time:
+              $ref: '#/components/headers/X-Response-Time'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoPos'
+              examples:
+                aprobado:
+                  summary: Credito aprobado
+                  value:
+                    idEvaluacion: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+                    aprobado: true
+                    mensajeParaCliente: Crédito aprobado
+                rechazado:
+                  summary: Credito no aprobado
+                  value:
+                    idEvaluacion: 3f2504e0-4f89-41d3-9a0c-0305e82c3302
+                    aprobado: false
+                    mensajeParaCliente: Crédito no aprobado en esta ocasión
+                revision:
+                  summary: Revision manual
+                  value:
+                    idEvaluacion: 3f2504e0-4f89-41d3-9a0c-0305e82c3303
+                    aprobado: false
+                    mensajeParaCliente: En revisión, te contactaremos
+        '400':
+          description: Solicitud invalida (respuesta del BFF Punto de Venta)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuestaPos'
+              example:
+                error:
+                  code: SOLICITUD_INVALIDA
+                  message: El plazo en meses debe ser un número entero mayor que cero
+                  reintentable: false
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/ScopeInsuficiente'
+        '429':
+          $ref: '#/components/responses/LimiteTasaExcedido'
+        '502':
+          $ref: '#/components/responses/ErrorAguasAbajo'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '#/components/responses/TiempoAgotado'
+  /evaluaciones-credito/{id}:
+    get:
+      tags:
+        - Punto de Venta
+      summary: Consulta el estado de una evaluacion (BFF Punto de Venta)
+      operationId: obtenerEvaluacion
+      security:
+        - OAuth2:
+            - evaluaciones:leer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estado simplificado
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+            API-Version:
+              $ref: '#/components/headers/API-Version'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoPos'
+        '400':
+          description: id invalido (respuesta del BFF Punto de Venta)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuestaPos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/ScopeInsuficiente'
+        '404':
+          description: Evaluacion no encontrada (BFF) o ruta inexistente (Gateway)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorRespuestaPos'
+                  - $ref: '#/components/schemas/ErrorRespuestaGateway'
+        '429':
+          $ref: '#/components/responses/LimiteTasaExcedido'
+        '502':
+          $ref: '#/components/responses/ErrorAguasAbajo'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '#/components/responses/TiempoAgotado'
+  /auditoria/evaluaciones:
+    get:
+      tags:
+        - Panel de Auditoria
+      summary: Lista evaluaciones (resumen) con filtros y paginacion (BFF Auditoria, uso interno)
+      operationId: listarAuditoria
+      security:
+        - OAuth2:
+            - auditoria:leer
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum:
+              - APROBADO
+              - RECHAZADO
+              - REVISION_MANUAL
+        - name: fechaDesde
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: fechaHasta
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: tiendaId
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Pagina de resumenes
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+            API-Version:
+              $ref: '#/components/headers/API-Version'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaResumenAuditoria'
+        '400':
+          description: Parametros invalidos (respuesta del BFF Auditoria)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/ScopeInsuficiente'
+        '429':
+          $ref: '#/components/responses/LimiteTasaExcedido'
+        '502':
+          $ref: '#/components/responses/ErrorAguasAbajo'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '#/components/responses/TiempoAgotado'
+  /auditoria/evaluaciones/{id}/detalle:
+    get:
+      tags:
+        - Panel de Auditoria
+      summary: Detalle completo de una evaluacion para analistas (BFF Auditoria, uso interno)
+      operationId: obtenerDetalleAuditoria
+      security:
+        - OAuth2:
+            - auditoria:leer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalle completo
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+            API-Version:
+              $ref: '#/components/headers/API-Version'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetalleAuditoria'
+        '400':
+          description: id invalido (respuesta del BFF Auditoria)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/ScopeInsuficiente'
+        '404':
+          description: Evaluacion no encontrada (BFF Auditoria)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+        '429':
+          $ref: '#/components/responses/LimiteTasaExcedido'
+        '502':
+          $ref: '#/components/responses/ErrorAguasAbajo'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '#/components/responses/TiempoAgotado'
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: 'Token de acceso RS256 emitido por Keycloak (realm resuelve) con el flujo client_credentials. Claims validados: iss, aud (resuelve-api), exp y scope. El rate limit se aplica por azp (client_id).'
+      flows:
+        clientCredentials:
+          tokenUrl: http://localhost:8180/realms/resuelve/protocol/openid-connect/token
+          scopes:
+            evaluaciones:escribir: Crear evaluaciones de credito
+            evaluaciones:leer: Consultar el estado de evaluaciones
+            auditoria:leer: Consultar la auditoria interna
+  headers:
+    X-Request-Id:
+      description: Identificador de correlacion (el recibido si es valido, o uno nuevo)
+      schema:
+        type: string
+    API-Version:
+      description: Version del contrato publico que atendio la peticion
+      schema:
+        type: string
+        example: v1
+    X-Response-Time:
+      description: Latencia medida por el Gateway, en milisegundos
+      schema:
+        type: string
+        example: 42.7ms
+    RateLimit-Limit:
+      schema:
+        type: integer
+    RateLimit-Remaining:
+      schema:
+        type: integer
+    RateLimit-Reset:
+      description: Segundos hasta que se reinicia la ventana
+      schema:
+        type: integer
+    Retry-After:
+      description: Segundos a esperar antes de reintentar
+      schema:
+        type: integer
+    WWW-Authenticate:
+      schema:
+        type: string
+        example: Bearer error="insufficient_scope", scope="auditoria:leer"
+  responses:
+    NoAutenticado:
+      description: Token ausente, invalido, expirado o de otro emisor/audiencia
+      headers:
+        WWW-Authenticate:
+          $ref: '#/components/headers/WWW-Authenticate'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaGateway'
+          example:
+            error:
+              code: NO_AUTENTICADO
+              message: Se requiere un token de acceso valido
+              reintentable: false
+    ScopeInsuficiente:
+      description: El token es valido pero no incluye el scope del endpoint
+      headers:
+        WWW-Authenticate:
+          $ref: '#/components/headers/WWW-Authenticate'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaGateway'
+          example:
+            error:
+              code: SCOPE_INSUFICIENTE
+              message: 'El token no tiene el scope requerido: auditoria:leer'
+              reintentable: false
+    LimiteTasaExcedido:
+      description: El client_id supero su limite de peticiones en la ventana
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/Retry-After'
+        RateLimit-Limit:
+          $ref: '#/components/headers/RateLimit-Limit'
+        RateLimit-Remaining:
+          $ref: '#/components/headers/RateLimit-Remaining'
+        RateLimit-Reset:
+          $ref: '#/components/headers/RateLimit-Reset'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuestaGateway'
+          example:
+            error:
+              code: LIMITE_TASA_EXCEDIDO
+              message: Se excedio el limite de peticiones. Intenta nuevamente en unos segundos.
+              reintentable: true
+    ErrorAguasAbajo:
+      description: 'El BFF no es alcanzable (Gateway: BFF_NO_DISPONIBLE) o respondio un error de su propia dependencia (ERROR_EVALUACION / ERROR_AUDITORIA)'
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ErrorRespuestaGateway'
+              - $ref: '#/components/schemas/ErrorRespuestaPos'
+              - $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+          example:
+            error:
+              code: BFF_NO_DISPONIBLE
+              message: El servicio no esta disponible. Intenta nuevamente en unos minutos.
+              reintentable: true
+    ServicioNoDisponible:
+      description: 'El servidor de autorizacion no esta disponible (Gateway: AUTORIZACION_NO_DISPONIBLE) o una dependencia del BFF no lo esta'
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ErrorRespuestaGateway'
+              - $ref: '#/components/schemas/ErrorRespuestaPos'
+              - $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+    TiempoAgotado:
+      description: El BFF no respondio a tiempo (Gateway BFF_TIMEOUT) o su dependencia tampoco
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ErrorRespuestaGateway'
+              - $ref: '#/components/schemas/ErrorRespuestaPos'
+              - $ref: '#/components/schemas/ErrorRespuestaAuditoria'
+  schemas:
+    ErrorRespuestaGateway:
+      type: object
+      required:
+        - error
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - reintentable
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              enum:
+                - NO_AUTENTICADO
+                - SCOPE_INSUFICIENTE
+                - RUTA_NO_ENCONTRADA
+                - LIMITE_TASA_EXCEDIDO
+                - BFF_NO_DISPONIBLE
+                - BFF_TIMEOUT
+                - AUTORIZACION_NO_DISPONIBLE
+                - ERROR_INTERNO
+            message:
+              type: string
+            reintentable:
+              type: boolean
+    SolicitudEvaluacionPos:
+      type: object
+      required:
+        - identificacion
+        - montoSolicitado
+        - plazoMeses
+        - tiendaId
+      description: Los campos adicionales se ignoran y no se envian al core. No hay coercion de tipos (un monto "450" como texto se rechaza).
+      properties:
+        identificacion:
+          type: string
+          minLength: 1
+          description: Cedula o identificador del cliente. No puede estar vacia (se aplica trim).
+          example: '1720000002'
+        montoSolicitado:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: Monto de credito solicitado (numero finito mayor que 0).
+          example: 450
+        plazoMeses:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          description: Plazo del credito en meses (entero mayor que 0).
+          example: 12
+        tiendaId:
+          type: string
+          minLength: 1
+          description: Identifica la tienda que origina la venta (para trazabilidad). No puede estar vacia.
+          example: TIENDA-001
+    ResultadoPos:
+      type: object
+      required:
+        - idEvaluacion
+        - aprobado
+        - mensajeParaCliente
+      additionalProperties: false
+      description: Version reducida de la DecisionCore, pensada para mostrarse en pantalla de caja en 1-2 lineas. No expone motivo, reglasAplicadas ni consultaBuroRealizada.
+      properties:
+        idEvaluacion:
+          type: string
+          format: uuid
+          description: Igual al idEvaluacion de la DecisionCore.
+        aprobado:
+          type: boolean
+          description: true si y solo si la decision del core es APROBADO.
+        mensajeParaCliente:
+          type: string
+          description: 'Texto corto y humano que depende solo de la decision: APROBADO -> "Crédito aprobado"; REVISION_MANUAL -> "En revisión, te contactaremos"; RECHAZADO -> "Crédito no aprobado en esta ocasión".'
+          enum:
+            - Crédito aprobado
+            - En revisión, te contactaremos
+            - Crédito no aprobado en esta ocasión
+    ErrorRespuestaPos:
+      type: object
+      required:
+        - error
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - reintentable
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              enum:
+                - SOLICITUD_INVALIDA
+                - ID_EVALUACION_INVALIDO
+                - EVALUACION_NO_ENCONTRADA
+                - EVALUACION_TIMEOUT
+                - SERVICIO_NO_DISPONIBLE
+                - ERROR_EVALUACION
+                - ERROR_INTERNO
+            message:
+              type: string
+              description: Texto en lenguaje humano, apto para mostrarse en caja.
+            reintentable:
+              type: boolean
+              description: Indica a la UI si puede ofrecer reintentar. El BFF no reintenta por su cuenta.
+    ErrorRespuestaAuditoria:
+      type: object
+      required:
+        - error
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - reintentable
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              enum:
+                - PARAMETRO_INVALIDO
+                - EVALUACION_NO_ENCONTRADA
+                - AUDITORIA_TIMEOUT
+                - SERVICIO_NO_DISPONIBLE
+                - ERROR_AUDITORIA
+                - ERROR_INTERNO
+            message:
+              type: string
+            reintentable:
+              type: boolean
+    ResumenAuditoria:
+      type: object
+      required:
+        - idEvaluacion
+        - fecha
+        - decision
+        - tiendaId
+        - consultaBuroRealizada
+      additionalProperties: false
+      description: Elemento liviano del listado (sin motivo, reglas, score ni datos del cliente)
+      properties:
+        idEvaluacion:
+          type: string
+          format: uuid
+        fecha:
+          type: string
+          format: date-time
+        decision:
+          type: string
+          enum:
+            - APROBADO
+            - RECHAZADO
+            - REVISION_MANUAL
+        tiendaId:
+          type: string
+          nullable: true
+        consultaBuroRealizada:
+          type: boolean
+    PaginaResumenAuditoria:
+      type: object
+      required:
+        - total
+        - page
+        - size
+        - totalPaginas
+        - items
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalPaginas:
+          type: integer
+          minimum: 0
+          description: ceil(total / size); 0 si total es 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResumenAuditoria'
+    DetalleAuditoria:
+      type: object
+      required:
+        - idEvaluacion
+        - fecha
+        - decision
+        - tiendaId
+        - consultaBuroRealizada
+        - identificacion
+        - montoSolicitado
+        - plazoMeses
+        - motivo
+        - scoreBuro
+        - reglasAplicadas
+        - registradoEn
+      additionalProperties: false
+      properties:
+        idEvaluacion:
+          type: string
+          format: uuid
+        fecha:
+          type: string
+          format: date-time
+        decision:
+          type: string
+          enum:
+            - APROBADO
+            - RECHAZADO
+            - REVISION_MANUAL
+        tiendaId:
+          type: string
+          nullable: true
+        consultaBuroRealizada:
+          type: boolean
+          description: Si fue necesario consultar el buro externo o se resolvio solo con reglas internas
+        identificacion:
+          type: string
+          nullable: true
+        montoSolicitado:
+          type: number
+          nullable: true
+        plazoMeses:
+          type: integer
+          nullable: true
+        motivo:
+          type: string
+          nullable: true
+        scoreBuro:
+          type: integer
+          nullable: true
+        reglasAplicadas:
+          type: array
+          description: Reglas evaluadas por el core, en orden de ejecucion
+          items:
+            type: string
+        registradoEn:
+          type: string
+          format: date-time
+          nullable: true

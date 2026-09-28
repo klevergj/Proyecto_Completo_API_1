@@ -1,0 +1,276 @@
+openapi: 3.0.3
+info:
+  title: Servicio de Auditoria - Resuelve
+  version: "1.1.0"
+  description: >-
+    Registro inmutable de las decisiones de credito. El core publica un
+    RegistroAuditoria tras cada decision (fire-and-forget, timeout 3000 ms) y
+    el BFF Auditoria lo consulta filtrado y paginado. Persistencia en MongoDB
+    (coleccion registros_auditoria, _id = idEvaluacion). No hay operaciones de
+    modificacion ni borrado. Fuente de verdad de los contratos request/response
+    de este servicio.
+servers:
+  - url: http://auditoria:8095
+    description: Red interna Docker
+  - url: http://localhost:8095
+    description: Local / desarrollo (host)
+paths:
+  /health:
+    get:
+      summary: Health check del servicio y del almacen
+      description: Responde 200 mientras el proceso este vivo; `almacen` indica si MongoDB responde.
+      operationId: healthCheckAuditoria
+      responses:
+        '200':
+          description: Proceso en ejecucion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "UP"
+                service: "auditoria"
+                almacen: "UP"
+                timestamp: "2026-09-24T12:00:00.000Z"
+  /registros:
+    post:
+      summary: Registra una decision (llamado por el core tras cada evaluacion)
+      description: >-
+        Valida por lista blanca: los campos no definidos en RegistroAuditoria se
+        descartan. Un idEvaluacion ya registrado responde 409 sin modificar el
+        registro existente.
+      operationId: registrarAuditoria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroAuditoria'
+            example:
+              idEvaluacion: "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+              identificacion: "1720000002"
+              montoSolicitado: 450
+              plazoMeses: 12
+              tiendaId: "TIENDA-001"
+              decision: "APROBADO"
+              motivo: "Monto solicitado (450) dentro del tope de aprobacion automatica (500) e historial interno limpio."
+              fecha: "2026-09-24T12:00:00.000Z"
+              consultaBuroRealizada: false
+              scoreBuro: null
+              reglasAplicadas: ["REGLA_MORA_VIGENTE", "REGLA_CAPACIDAD_PAGO"]
+      responses:
+        '201':
+          description: Registro almacenado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistroAuditoriaAlmacenado'
+        '400':
+          description: Registro invalido (nada se persiste)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  code: "REGISTRO_INVALIDO"
+                  message: "consultaBuroRealizada debe ser booleano"
+        '409':
+          description: Ya existe un registro con ese idEvaluacion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  code: "REGISTRO_DUPLICADO"
+                  message: "Ya existe un registro de auditoria para esa evaluacion"
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/AlmacenNoDisponible'
+    get:
+      summary: Lista registros con filtros y paginacion (llamado por BFF Auditoria)
+      description: >-
+        Orden fecha descendente e idEvaluacion ascendente (paginacion estable).
+        fechaDesde y fechaHasta son dias UTC inclusivos. Siempre pagina.
+      operationId: listarRegistros
+      parameters:
+        - name: estado
+          in: query
+          schema: { type: string, enum: [APROBADO, RECHAZADO, REVISION_MANUAL] }
+        - name: fechaDesde
+          in: query
+          schema: { type: string, format: date }
+          example: "2026-09-01"
+        - name: fechaHasta
+          in: query
+          schema: { type: string, format: date }
+          example: "2026-09-30"
+        - name: tiendaId
+          in: query
+          schema: { type: string }
+          example: "TIENDA-001"
+        - name: page
+          in: query
+          description: Indice de pagina, base 0
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          description: Tamano de pagina (maximo configurable PAGINA_TAMANO_MAXIMO, por defecto 100)
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Pagina de registros
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaRegistros'
+        '400':
+          $ref: '#/components/responses/ParametroInvalido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/AlmacenNoDisponible'
+  /registros/{idEvaluacion}:
+    get:
+      summary: Obtiene el registro completo de una evaluacion (llamado por BFF Auditoria)
+      operationId: obtenerRegistro
+      parameters:
+        - name: idEvaluacion
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Registro almacenado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistroAuditoriaAlmacenado'
+        '400':
+          $ref: '#/components/responses/ParametroInvalido'
+        '404':
+          description: No existe un registro con ese idEvaluacion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  code: "REGISTRO_NO_ENCONTRADO"
+                  message: "No existe un registro de auditoria para esa evaluacion"
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/AlmacenNoDisponible'
+components:
+  responses:
+    ParametroInvalido:
+      description: Filtros, paginacion o idEvaluacion invalidos (no se consulta el almacen)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
+          example:
+            error:
+              code: "PARAMETRO_INVALIDO"
+              message: "size debe ser un entero entre 1 y 100"
+    ErrorInterno:
+      description: Error no previsto (detalle solo en el log)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
+          example:
+            error:
+              code: "ERROR_INTERNO"
+              message: "Error interno en el Servicio de Auditoria"
+    AlmacenNoDisponible:
+      description: MongoDB no disponible o sin respuesta en MONGO_TIMEOUT_MS (2000 ms)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
+          example:
+            error:
+              code: "ALMACEN_NO_DISPONIBLE"
+              message: "El almacen de auditoria no esta disponible temporalmente"
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, almacen, timestamp]
+      properties:
+        status: { type: string, example: "UP" }
+        service: { type: string, example: "auditoria" }
+        almacen: { type: string, enum: [UP, DOWN] }
+        timestamp: { type: string, format: date-time }
+    RegistroAuditoria:
+      type: object
+      required: [idEvaluacion, decision, fecha, consultaBuroRealizada, reglasAplicadas]
+      description: Campos adicionales se descartan (lista blanca).
+      properties:
+        idEvaluacion: { type: string, format: uuid }
+        identificacion: { type: string, description: Cedula o identificador del cliente }
+        montoSolicitado: { type: number }
+        plazoMeses: { type: integer }
+        tiendaId: { type: string }
+        decision: { type: string, enum: [APROBADO, RECHAZADO, REVISION_MANUAL] }
+        motivo: { type: string }
+        fecha: { type: string, format: date-time, description: Instante de la decision en el core }
+        consultaBuroRealizada: { type: boolean, description: true si el core consulto el buro externo }
+        scoreBuro: { type: integer, nullable: true }
+        reglasAplicadas:
+          type: array
+          description: Reglas evaluadas por el core, en orden de ejecucion
+          items: { type: string }
+    RegistroAuditoriaAlmacenado:
+      type: object
+      required: [idEvaluacion, identificacion, montoSolicitado, plazoMeses, tiendaId, decision, motivo, fecha, consultaBuroRealizada, scoreBuro, reglasAplicadas, registradoEn]
+      description: RegistroAuditoria persistido; los opcionales no recibidos valen null.
+      properties:
+        idEvaluacion: { type: string, format: uuid }
+        identificacion: { type: string, nullable: true }
+        montoSolicitado: { type: number, nullable: true }
+        plazoMeses: { type: integer, nullable: true }
+        tiendaId: { type: string, nullable: true }
+        decision: { type: string, enum: [APROBADO, RECHAZADO, REVISION_MANUAL] }
+        motivo: { type: string, nullable: true }
+        fecha: { type: string, format: date-time }
+        consultaBuroRealizada: { type: boolean }
+        scoreBuro: { type: integer, nullable: true }
+        reglasAplicadas:
+          type: array
+          items: { type: string }
+        registradoEn: { type: string, format: date-time, description: Instante en que auditoria lo persistio }
+    PaginaRegistros:
+      type: object
+      required: [total, page, size, items]
+      properties:
+        total: { type: integer, minimum: 0, description: Registros que cumplen los filtros }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1 }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistroAuditoriaAlmacenado'
+    ErrorRespuesta:
+      type: object
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+              enum:
+                - REGISTRO_INVALIDO
+                - PARAMETRO_INVALIDO
+                - REGISTRO_NO_ENCONTRADO
+                - REGISTRO_DUPLICADO
+                - ALMACEN_NO_DISPONIBLE
+                - ERROR_INTERNO
+            message: { type: string }

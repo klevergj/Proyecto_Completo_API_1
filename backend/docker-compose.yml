@@ -1,0 +1,190 @@
+version: '3.8'
+
+networks:
+  resuelve-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+services:
+  # Base de Datos Relacional para Repositorio Interno
+  postgres:
+    image: postgres:16-alpine
+    container_name: resuelve-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: resuelve_user
+      POSTGRES_PASSWORD: resuelve_pass
+      POSTGRES_DB: resuelve_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resuelve_user -d resuelve_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - resuelve-network
+
+  # 1. API Gateway (Puerto 8080)
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: resuelve-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      NODE_ENV: production
+      BFF_POS_URL: http://bff-punto-venta:8081
+      BFF_POS_TIMEOUT_MS: 6000
+      BFF_AUDITORIA_URL: http://bff-auditoria:8082
+      BFF_AUDITORIA_TIMEOUT_MS: 4000
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX: 100
+      # Metricas Prometheus en /metrics (puerto interno, no publicado)
+      METRICS_PORT: 9464
+      # Modo temporal SIN token hasta integrar el Frontend. Para activar OAuth2
+      # (Keycloak, client_credentials): AUTH_HABILITADA "true" + JWT_ISSUER,
+      # JWT_AUDIENCE y JWKS_URI (ver services/gateway/.env.example).
+      AUTH_HABILITADA: "false"
+      # Contrato del Frontend servido en http://localhost:8080/docs y /openapi.yaml
+      CONTRATO_FRONTEND_PATH: /contracts/spec0-frontend.yaml
+    volumes:
+      - ./contracts:/contracts:ro
+    depends_on:
+      - bff-punto-venta
+      - bff-auditoria
+    networks:
+      - resuelve-network
+
+  # 2. BFF Punto de Venta (Puerto 8081)
+  bff-punto-venta:
+    build:
+      context: ./services/bff-punto-venta
+      dockerfile: Dockerfile
+    container_name: resuelve-bff-punto-venta
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: 8081
+      NODE_ENV: production
+      EVALUACION_CORE_URL: http://evaluacion-core:8090
+    depends_on:
+      - evaluacion-core
+    networks:
+      - resuelve-network
+
+  # 3. BFF Auditoria (Puerto 8082)
+  bff-auditoria:
+    build:
+      context: ./services/bff-auditoria
+      dockerfile: Dockerfile
+    container_name: resuelve-bff-auditoria
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: 8082
+      NODE_ENV: production
+      AUDITORIA_SERVICE_URL: http://auditoria:8095
+    depends_on:
+      - auditoria
+    networks:
+      - resuelve-network
+
+  # 4. Servicio Evaluacion Core (Puerto 8090)
+  evaluacion-core:
+    build:
+      context: ./services/evaluacion-core
+      dockerfile: Dockerfile
+    container_name: resuelve-evaluacion-core
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      PORT: 8090
+      NODE_ENV: production
+      BURO_SIMULADO_URL: http://buro-simulado:8091
+      REPOSITORIO_INTERNO_URL: http://repositorio-interno:8092
+      AUDITORIA_SERVICE_URL: http://auditoria:8095
+    depends_on:
+      postgres:
+        condition: service_healthy
+      buro-simulado:
+        condition: service_started
+      repositorio-interno:
+        condition: service_started
+      auditoria:
+        condition: service_started
+    networks:
+      - resuelve-network
+
+  # 5. Simulador / Adapter de Buro Externo (Puerto 8091)
+  buro-simulado:
+    build:
+      context: ./services/buro-simulado
+      dockerfile: Dockerfile
+    container_name: resuelve-buro-simulado
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    environment:
+      PORT: 8091
+      NODE_ENV: production
+      ESCENARIO_INICIAL: NORMAL
+      CONTRATO_OPENAPI_PATH: /contracts/spec5-buro-simulado.yaml
+    volumes:
+      - ./contracts:/contracts:ro
+    networks:
+      - resuelve-network
+
+  # 6. Repositorio Interno (Puerto 8092)
+  repositorio-interno:
+    build:
+      context: ./services/repositorio-interno
+      dockerfile: Dockerfile
+    container_name: resuelve-repositorio-interno
+    restart: unless-stopped
+    ports:
+      - "8092:8092"
+    environment:
+      PORT: 8092
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: resuelve_user
+      DB_PASSWORD: resuelve_pass
+      DB_NAME: resuelve_db
+      SEED_AL_INICIAR: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - resuelve-network
+
+  # 7. Servicio de Auditoria (Puerto 8095)
+  auditoria:
+    build:
+      context: ./services/auditoria
+      dockerfile: Dockerfile
+    container_name: resuelve-auditoria
+    restart: unless-stopped
+    ports:
+      - "8095:8095"
+    environment:
+      PORT: 8095
+      NODE_ENV: production
+      MONGO_URI: mongodb+srv://edisonenc80_db_user:ZUp7WDWVpTMlTwdq@cluster0.ce0hfi3.mongodb.net/
+      DB_NAME: auditoria_db
+      MONGO_TIMEOUT_MS: 2000
+      PAGINA_TAMANO_DEFECTO: 20
+      PAGINA_TAMANO_MAXIMO: 100
+    networks:
+      - resuelve-network

@@ -1,0 +1,21 @@
+{
+  "name": "resuelve-backend",
+  "version": "2.0.0",
+  "description": "Servidor Backend Express Node.js con MongoDB Atlas y Notificaciones por Webhook en Tiempo Real",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test:notificaciones": "node test-notificaciones.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.2",
+    "uuid": "^11.0.3"
+  }
+}

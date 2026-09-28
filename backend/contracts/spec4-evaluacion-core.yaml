@@ -1,0 +1,210 @@
+openapi: 3.0.3
+info:
+  title: Servicio de Evaluacion de Credito (Core) - Resuelve
+  version: "1.1.0"
+  description: >-
+    Motor de decision de credito (Chain of Responsibility con reglas Strategy).
+    Orquesta el Repositorio Interno y, de forma perezosa, el Adapter del Buro
+    Externo (con Circuit Breaker y fallback) para proteger el KPI de resolver
+    al menos el 60% de las evaluaciones sin consultar el buro. Dispara el
+    Servicio de Auditoria de forma no bloqueante. Fuente de verdad de los
+    contratos request/response de este servicio.
+servers:
+  - url: http://evaluacion-core:8090
+    description: Red interna Docker
+  - url: http://localhost:8090
+    description: Local / desarrollo (host)
+paths:
+  /health:
+    get:
+      summary: Health check del servicio
+      operationId: healthCheckEvaluacionCore
+      responses:
+        '200':
+          description: Servicio saludable y en ejecucion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "UP"
+                service: "evaluacion-core"
+                timestamp: "2026-09-23T23:00:00.000Z"
+  /evaluar:
+    post:
+      summary: Ejecuta el motor de reglas sobre una solicitud de credito
+      description: >-
+        Recorre la cadena de reglas: primero las internas (mora vigente,
+        capacidad de pago) sin consultar el buro; si ninguna decide y la
+        siguiente regla lo requiere, consulta el buro externo y continua con
+        las reglas de score y cliente nuevo. Devuelve siempre una decision
+        (APROBADO, RECHAZADO o REVISION_MANUAL); si ninguna regla decide, aplica
+        la aprobacion por defecto (DEFAULT_APROBADO).
+      operationId: evaluarCredito
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudCore'
+            example:
+              identificacion: "1720000002"
+              montoSolicitado: 450
+              plazoMeses: 12
+              tiendaId: "TIENDA-001"
+      responses:
+        '200':
+          description: Decision del motor de reglas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionCore'
+              example:
+                idEvaluacion: "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+                decision: "APROBADO"
+                motivo: "Monto solicitado (450) dentro del tope de aprobacion automatica (500) e historial interno limpio."
+                fecha: "2026-09-23T23:00:00.000Z"
+                consultaBuroRealizada: false
+                reglasAplicadas: ["REGLA_MORA_VIGENTE", "REGLA_CAPACIDAD_PAGO"]
+        '400':
+          description: >-
+            Solicitud invalida: cuerpo mal formado, o identificacion invalida
+            reportada por el buro externo (INVALID_IDENTIFICACION).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  message: "La identificacion es obligatoria y no puede estar vacia"
+                  code: "INVALID_IDENTIFICACION"
+        '500':
+          description: >-
+            Error interno del core (por ejemplo, fallo no recuperable al
+            consultar el Repositorio Interno). El fallo del buro externo NO
+            produce 500: se resuelve con reglas internas via fallback.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  message: "Error interno en Evaluacion Core"
+                  code: "INTERNAL_CORE_ERROR"
+  /evaluaciones/{id}:
+    get:
+      summary: Consulta el estado de una evaluacion previa
+      operationId: obtenerEvaluacionCore
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Decision almacenada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionCore'
+        '404':
+          description: No existe una evaluacion con el id indicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+              example:
+                error:
+                  message: "Evaluacion no encontrada"
+                  code: "EVALUACION_NOT_FOUND"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, timestamp]
+      properties:
+        status:
+          type: string
+          example: "UP"
+        service:
+          type: string
+          example: "evaluacion-core"
+        timestamp:
+          type: string
+          format: date-time
+    SolicitudCore:
+      type: object
+      required: [identificacion, montoSolicitado, plazoMeses]
+      properties:
+        identificacion:
+          type: string
+          minLength: 1
+          description: Cedula o identificador del cliente. No puede estar vacia.
+          example: "1720000002"
+        montoSolicitado:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: Monto de credito solicitado (mayor que 0).
+          example: 450
+        plazoMeses:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          description: Plazo del credito en meses (entero mayor que 0).
+          example: 12
+        tiendaId:
+          type: string
+          description: Identificador de la tienda o canal originador (opcional).
+          example: "TIENDA-001"
+    DecisionCore:
+      type: object
+      required: [idEvaluacion, decision, motivo, fecha, consultaBuroRealizada, reglasAplicadas]
+      properties:
+        idEvaluacion:
+          type: string
+          format: uuid
+          description: Identificador unico de la evaluacion (UUID v4).
+        decision:
+          type: string
+          enum: [APROBADO, RECHAZADO, REVISION_MANUAL]
+        motivo:
+          type: string
+          description: Explicacion legible de la decision emitida por la regla que decidio.
+        fecha:
+          type: string
+          format: date-time
+        consultaBuroRealizada:
+          type: boolean
+          description: >-
+            true si el motor consulto el Adapter del Buro Externo; false si la
+            decision se resolvio solo con reglas internas / Repositorio Interno.
+        reglasAplicadas:
+          type: array
+          description: >-
+            Nombres de las reglas (estrategias) evaluadas, en orden y sin
+            duplicados, hasta la regla que decidio inclusive. En el camino de
+            aprobacion por defecto incluye DEFAULT_APROBADO al final.
+          items:
+            type: string
+            enum:
+              - REGLA_MORA_VIGENTE
+              - REGLA_CAPACIDAD_PAGO
+              - REGLA_SCORE_BURO
+              - REGLA_CLIENTE_NUEVO
+              - DEFAULT_APROBADO
+    ErrorRespuesta:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [message, code]
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+

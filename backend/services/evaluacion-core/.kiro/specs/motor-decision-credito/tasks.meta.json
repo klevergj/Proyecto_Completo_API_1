@@ -1,0 +1,269 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Crear `src/config/reglasConfig.js` y actualizar `.env.example`": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226955938
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226965369
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227065294
+      }
+    ],
+    "2.1 Normalizar la salida de `src/infrastructure/adapters/buroExternoAdapter.js`": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226956149
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226968834
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227069021
+      }
+    ],
+    "3.1 Implementar `src/domain/reglas/reglaMoraVigente.js`": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226956349
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227073648
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227189972
+      }
+    ],
+    "4.1 Implementar `src/domain/reglas/reglaCapacidadPago.js`": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226956521
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227077254
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227191298
+      }
+    ],
+    "5.1 Implementar `src/domain/reglas/reglaScoreBuro.js`": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226956667
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227078587
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227193005
+      }
+    ],
+    "6.1 Implementar `src/domain/reglas/reglaClienteNuevo.js`": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226956785
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227079955
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227194262
+      }
+    ],
+    "7. Checkpoint - Reglas y dependencias": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226956953
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227367111
+      }
+    ],
+    "8.1 Modificar `src/domain/motorReglas.js` (Chain of Responsibility)": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226957121
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227370688
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227470789
+      }
+    ],
+    "9.1 Modificar `src/infrastructure/auditoriaPublisher.js`": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226957248
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227081183
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227195402
+      }
+    ],
+    "10.1 Reescribir `src/application/evaluarCreditoUseCase.js`": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226957381
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227478865
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227559615
+      }
+    ],
+    "11.1 Añadir `fast-check` como devDependency": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226957513
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227199851
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227326081
+      }
+    ],
+    "12. Checkpoint final - Motor, caso de uso e integración": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790226957663
+      },
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227576445
+      }
+    ],
+    "1. Configuración de umbrales del servicio": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227065451
+      }
+    ],
+    "2. Normalización del adapter del buró externo": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227069122
+      }
+    ],
+    "3. Implementar Regla Mora Vigente (Strategy, interna)": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227190136
+      }
+    ],
+    "4. Implementar Regla Capacidad de Pago (Strategy, interna)": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227191429
+      }
+    ],
+    "5. Implementar Regla Score Buró (Strategy, requiere buró)": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227193138
+      }
+    ],
+    "6. Implementar Regla Cliente Nuevo (Strategy, requiere buró)": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227194500
+      }
+    ],
+    "9. Publicador de auditoría enriquecido": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227195598
+      }
+    ],
+    "11. Añadir fast-check e integrar pruebas de extremo a extremo": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227326249
+      }
+    ],
+    "8. Motor de reglas con ejecución por fases y trazabilidad": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227470990
+      }
+    ],
+    "10. Reescribir el caso de uso con consulta perezosa del buró": [
+      {
+        "executionId": "0bcc2230-78e1-470e-b475-2dfc809a5d20",
+        "chatSessionId": "sess_5fb62aa7-8350-4f09-8a0c-406b20cb76c7",
+        "timestamp": 1790227559926
+      }
+    ]
+  }
+}

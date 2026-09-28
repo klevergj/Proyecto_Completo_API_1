@@ -1,0 +1,464 @@
+{
+  "pbtResults": {
+    "1.2 Escribir prueba basada en propiedades para la inicialización del escenario": {
+      "status": "passed",
+      "lastRunTimestamp": 1790220748238
+    },
+    "4.2 Escribir prueba basada en propiedades para el invariante de rango del score": {
+      "status": "passed",
+      "lastRunTimestamp": 1790220768427
+    },
+    "4.3 Escribir prueba basada en propiedades para el determinismo por identificación": {
+      "status": "passed",
+      "lastRunTimestamp": 1790220769815
+    },
+    "4.4 Escribir prueba basada en propiedades para el bicondicional deuda/mora": {
+      "status": "passed",
+      "lastRunTimestamp": 1790220770854
+    }
+  },
+  "executionHistory": {
+    "1.1 Crear `src/scenarioState.js` con el estado en memoria y su API": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216448186
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216459992
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216533861
+      }
+    ],
+    "2.1 Actualizar `src/routes/admin.js` para usar `scenarioState`": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216448488
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216539086
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216612422
+      }
+    ],
+    "2.2 Actualizar `src/routes/score.js` para usar `scenarioState`": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216448743
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216540351
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216613546
+      }
+    ],
+    "3. Checkpoint — Verificar refactor sin regresiones": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216448963
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216626500
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216635086
+      }
+    ],
+    "4.1 Cambiar el módulo del cálculo del score de `651` a `551`": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216449160
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216650451
+      },
+      {
+        "executionId": "362e7e08-c11c-4882-99c2-59660d18e732",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216888629
+      }
+    ],
+    "5.1 Validar `identificacion` no vacía en `GET /score/:identificacion`": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216449362
+      },
+      {
+        "executionId": "362e7e08-c11c-4882-99c2-59660d18e732",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216895789
+      },
+      {
+        "executionId": "7f614675-b430-4914-b968-526a587be014",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790217107734
+      },
+      {
+        "executionId": "7f614675-b430-4914-b968-526a587be014",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790217120337
+      }
+    ],
+    "6.1 Usar `LATENCIA_MS` en la rama LATENCIA_ALTA": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216449641
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220514568
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220530853
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220564845
+      }
+    ],
+    "6.2 Documentar `LATENCIA_MS` en `.env.example`": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216449846
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216651860
+      },
+      {
+        "executionId": "362e7e08-c11c-4882-99c2-59660d18e732",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216890907
+      }
+    ],
+    "7. Checkpoint — Verificar correcciones de comportamiento": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216450109
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220514725
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221855232
+      }
+    ],
+    "9.1 Escribir `contracts/buro-simulado.yaml` como fuente de verdad": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216450361
+      },
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216652893
+      },
+      {
+        "executionId": "362e7e08-c11c-4882-99c2-59660d18e732",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216889975
+      }
+    ],
+    "10.1 Añadir `fast-check` como dependencia de desarrollo": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216450597
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220514924
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220572103
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220665031
+      }
+    ],
+    "10.2 Ejecutar toda la suite de Jest y verificar que todas las pruebas pasan": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216450787
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220515049
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221178744
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221849796
+      }
+    ],
+    "11. Checkpoint final — Ensure all tests pass": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216451048
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220515233
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221855973
+      }
+    ],
+    "1. Extraer el estado de escenario a un módulo dedicado (`src/scenarioState.js`)": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216534121
+      }
+    ],
+    "2. Refactorizar `admin.js` y `score.js` para consumir `scenarioState`": [
+      {
+        "executionId": "c9643041-d60a-4a39-a3d0-f56a31866373",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216613744
+      }
+    ],
+    "4. Corregir el rango del score en `calcularScoreDeterministico`": [
+      {
+        "executionId": "362e7e08-c11c-4882-99c2-59660d18e732",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216888928
+      }
+    ],
+    "9. Crear el contrato OpenAPI 3.0 (`contracts/buro-simulado.yaml`)": [
+      {
+        "executionId": "362e7e08-c11c-4882-99c2-59660d18e732",
+        "chatSessionId": "sess_36edc5d7-6eb1-4a2b-bbb1-480abb1fe56e",
+        "timestamp": 1790216890193
+      }
+    ],
+    "5. Añadir validación de `identificacion` vacía": [
+      {
+        "executionId": "7f614675-b430-4914-b968-526a587be014",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790217120558
+      }
+    ],
+    "6. Introducir latencia configurable (`LATENCIA_MS`)": [
+      {
+        "executionId": "740c62cf-5a67-4113-ad9e-44bf870f2222",
+        "chatSessionId": "sess_2aed987a-e1d0-4cdb-8bc9-ea5881cc2244",
+        "timestamp": 1790217189625
+      }
+    ],
+    "1.2 Escribir prueba basada en propiedades para la inicialización del escenario": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220679114
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220809368
+      }
+    ],
+    "2.3 Escribir prueba basada en propiedades para la conmutación válida de escenario": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220680500
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220810789
+      }
+    ],
+    "2.4 Escribir prueba basada en propiedades para la conmutación inválida de escenario": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220681908
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220812261
+      }
+    ],
+    "4.2 Escribir prueba basada en propiedades para el invariante de rango del score": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220684523
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220813588
+      }
+    ],
+    "5.2 Escribir prueba de ejemplo (Supertest) para `identificacion` vacía": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220684698
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220814952
+      }
+    ],
+    "4.3 Escribir prueba basada en propiedades para el determinismo por identificación": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220820901
+      }
+    ],
+    "4.4 Escribir prueba basada en propiedades para el bicondicional deuda/mora": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220822355
+      }
+    ],
+    "6.3 Escribir prueba basada en propiedades para la igualdad de valores NORMAL vs LATENCIA_ALTA": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220823723
+      }
+    ],
+    "6.4 Escribir prueba de ejemplo (Supertest) para el umbral de latencia": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220825153
+      }
+    ],
+    "6.5 Escribir prueba de ejemplo (Supertest) para concurrencia bajo LATENCIA_ALTA": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220826461
+      }
+    ],
+    "8.1 Escribir prueba basada en propiedades para la completitud y tipos de la respuesta NORMAL": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220831514
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221169890
+      }
+    ],
+    "8.4 Escribir prueba de ejemplo (Supertest) para `GET /health`": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220832889
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221171284
+      }
+    ],
+    "8.5 Escribir prueba de ejemplo (Supertest) para error no controlado": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790220834092
+      },
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221168606
+      }
+    ],
+    "8. Completar cobertura de propiedades y pruebas de respuesta": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221168892
+      }
+    ],
+    "8.2 Escribir prueba basada en propiedades para la respuesta bajo CAIDO": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221172735
+      }
+    ],
+    "8.3 Escribir prueba de ejemplo (Supertest) para CAIDO rápido sin retraso": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221173960
+      }
+    ],
+    "10. Configurar dependencias y ejecutar la suite completa": [
+      {
+        "executionId": "de9f4d41-2934-4e34-8f84-9348a69a04ac",
+        "chatSessionId": "sess_a93fd094-07e9-47ec-aa07-f6f890ae54a5",
+        "timestamp": 1790221850074
+      }
+    ]
+  }
+}

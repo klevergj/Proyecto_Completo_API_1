@@ -1,0 +1,294 @@
+openapi: 3.0.3
+info:
+  title: Buro Simulado API
+  version: 1.0.0
+  description: >
+    Servicio adaptador / simulador del buro de credito externo del sistema
+    Resuelve Credito. Devuelve puntajes crediticios (scores) simulados y
+    deterministicos derivados exclusivamente de la `identificacion` consultada,
+    y permite alternar en tiempo de ejecucion entre escenarios de operacion
+    (NORMAL, LATENCIA_ALTA, CAIDO) mediante un endpoint administrativo, para
+    demostrar en vivo los patrones de resiliencia del nucleo (Circuit Breaker).
+    Este contrato es la fuente de verdad de todo request/response del servicio.
+
+servers:
+  - url: http://localhost:8091
+    description: Instancia local del servicio buro-simulado (puerto 8091)
+
+tags:
+  - name: score
+    description: Consulta de score crediticio simulado
+  - name: admin
+    description: Administracion de escenarios en tiempo de ejecucion
+  - name: health
+    description: Verificacion de estado del servicio
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      operationId: getHealth
+      summary: Verificacion de estado del servicio
+      description: >
+        Indica que el servicio buro-simulado esta en ejecucion. Devuelve un
+        cuerpo con `status`, `service` y `timestamp`.
+      responses:
+        "200":
+          description: El servicio esta operativo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+              example:
+                status: UP
+                service: buro-simulado
+                timestamp: "2025-01-15T10:30:00.000Z"
+
+  /score/{identificacion}:
+    get:
+      tags:
+        - score
+      operationId: getScore
+      summary: Consulta de score crediticio simulado por identificacion
+      description: >
+        Devuelve un score crediticio simulado y deterministico para la
+        `identificacion` recibida. El comportamiento depende del escenario
+        activo: NORMAL responde 200 rapido; LATENCIA_ALTA responde 200 tras un
+        retraso de al menos 5 segundos con los mismos valores deterministicos;
+        CAIDO responde 503 sin aplicar retraso.
+      parameters:
+        - name: identificacion
+          in: path
+          required: true
+          description: >
+            Cadena que identifica al sujeto de credito y sirve como entrada del
+            calculo deterministico del score. No puede ser vacia ni contener
+            solo espacios en blanco.
+          schema:
+            type: string
+            minLength: 1
+          example: "12345"
+      responses:
+        "200":
+          description: >
+            Score calculado correctamente (escenario NORMAL o LATENCIA_ALTA).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreResponse"
+              example:
+                identificacion: "12345"
+                score: 720
+                moraExterna: false
+                deudaExternaTotal: 0
+                fechaConsulta: "2025-01-15T10:30:00.000Z"
+                escenarioSimulado: NORMAL
+        "400":
+          description: >
+            La `identificacion` recibida es vacia o solo contiene espacios en
+            blanco.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  message: "La identificacion no puede estar vacia"
+                  code: INVALID_IDENTIFICACION
+        "503":
+          description: >
+            El escenario activo es CAIDO; el servicio de buro no esta disponible.
+            No se devuelven los campos `score`, `moraExterna` ni
+            `deudaExternaTotal`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  message: "Servicio de buro de credito no disponible temporalmente (Escenario CAIDO)"
+                  code: SERVICE_UNAVAILABLE
+        "500":
+          description: Error no controlado durante el procesamiento de la peticion.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  message: "Error interno en Simulador de Buro"
+                  code: BURO_SIMULATOR_ERROR
+
+  /admin/escenario:
+    get:
+      tags:
+        - admin
+      operationId: getEscenario
+      summary: Consultar el escenario activo
+      description: Devuelve el escenario de operacion actualmente activo.
+      responses:
+        "200":
+          description: Escenario activo actual.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - escenario
+                properties:
+                  escenario:
+                    $ref: "#/components/schemas/Escenario"
+                example:
+                  escenario: NORMAL
+    post:
+      tags:
+        - admin
+      operationId: setEscenario
+      summary: Cambiar el escenario activo en tiempo de ejecucion
+      description: >
+        Actualiza el escenario activo sin reiniciar el servicio. El valor se
+        normaliza a mayusculas antes de validarse. Si el valor pertenece al
+        conjunto {NORMAL, LATENCIA_ALTA, CAIDO} se aplica a las consultas
+        posteriores; en caso contrario (ausente o invalido) se rechaza y el
+        escenario previo se conserva sin cambios.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminEscenarioRequest"
+            example:
+              escenario: CAIDO
+      responses:
+        "200":
+          description: Escenario actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEscenarioResponse"
+              example:
+                mensaje: "Escenario actualizado correctamente"
+                escenario: CAIDO
+        "400":
+          description: >
+            El campo `escenario` esta ausente o su valor normalizado no
+            pertenece al conjunto {NORMAL, LATENCIA_ALTA, CAIDO}. El escenario
+            activo previo se conserva sin cambios.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  message: "Escenario invalido. Valores permitidos: NORMAL, LATENCIA_ALTA, CAIDO"
+                  code: INVALID_SCENARIO
+
+components:
+  schemas:
+    Escenario:
+      type: string
+      description: Escenario de operacion del buro simulado.
+      enum:
+        - NORMAL
+        - LATENCIA_ALTA
+        - CAIDO
+
+    ScoreResponse:
+      type: object
+      description: Respuesta de una consulta de score exitosa (200).
+      required:
+        - identificacion
+        - score
+        - moraExterna
+        - deudaExternaTotal
+        - fechaConsulta
+        - escenarioSimulado
+      properties:
+        identificacion:
+          type: string
+          description: Igual al valor recibido en la ruta.
+        score:
+          type: integer
+          description: Puntaje crediticio simulado, entero en el rango [300, 850] inclusive.
+          minimum: 300
+          maximum: 850
+        moraExterna:
+          type: boolean
+          description: Indicador de mora simulada del sujeto de credito.
+        deudaExternaTotal:
+          type: number
+          description: >
+            Monto de deuda externa simulada. Es mayor que cero si y solo si
+            `moraExterna` es verdadero; es exactamente cero cuando
+            `moraExterna` es falso.
+        fechaConsulta:
+          type: string
+          format: date-time
+          description: Marca de tiempo de la consulta en formato ISO 8601 (UTC).
+        escenarioSimulado:
+          $ref: "#/components/schemas/Escenario"
+
+    AdminEscenarioRequest:
+      type: object
+      description: Cuerpo para cambiar el escenario activo.
+      required:
+        - escenario
+      properties:
+        escenario:
+          $ref: "#/components/schemas/Escenario"
+
+    AdminEscenarioResponse:
+      type: object
+      description: Respuesta a un cambio de escenario exitoso.
+      required:
+        - mensaje
+        - escenario
+      properties:
+        mensaje:
+          type: string
+          description: Mensaje de confirmacion del cambio.
+        escenario:
+          $ref: "#/components/schemas/Escenario"
+
+    Health:
+      type: object
+      description: Estado de salud del servicio.
+      required:
+        - status
+        - service
+        - timestamp
+      properties:
+        status:
+          type: string
+          description: Estado del servicio (por ejemplo, "UP").
+        service:
+          type: string
+          description: Nombre del servicio.
+        timestamp:
+          type: string
+          format: date-time
+          description: Marca de tiempo de la respuesta en formato ISO 8601.
+
+    Error:
+      type: object
+      description: Forma estructurada de todas las respuestas de error del servicio.
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - message
+            - code
+          properties:
+            message:
+              type: string
+              description: Mensaje legible que describe el error.
+            code:
+              type: string
+              description: >
+                Codigo que identifica la causa del error. Valores posibles:
+                INVALID_IDENTIFICACION (400 en score), SERVICE_UNAVAILABLE
+                (503 en escenario CAIDO), INVALID_SCENARIO (400 en admin),
+                BURO_SIMULATOR_ERROR (500 error no controlado).
