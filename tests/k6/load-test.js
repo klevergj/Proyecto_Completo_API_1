@@ -9,8 +9,8 @@ export const options = {
     { duration: '30s', target: 0 },   // Ramp-down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000'], // 95% de peticiones por debajo de 2s
-    http_req_failed: ['rate<0.05'],    // Menos de 5% de errores
+    http_req_duration: ['p(95)<500'], // 95% de peticiones por debajo de 500ms
+    http_req_failed: ['rate<0.01'],   // Menos de 1% de errores
   },
 };
 

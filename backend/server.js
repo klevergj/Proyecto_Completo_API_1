@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import rateLimit from 'express-rate-limit';
+import CircuitBreaker from 'opossum';
 
 import { conectarDB } from './config/db.js';
 import { enviarNotificacionBD } from './helpers/notificaciones.js';
@@ -48,6 +50,37 @@ function autenticarOAuthPermisivo(req, res, next) {
   }
   next();
 }
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 100, // Límite de 100 peticiones
+  keyGenerator: (req) => {
+    return req.usuario?.client_id || req.ip;
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      codigo: 'LIMITE_TASA_EXCEDIDO',
+      mensaje: 'Demasiadas solicitudes. Por favor, espere unos segundos.'
+    });
+  }
+});
+
+app.use('/v1/', apiLimiter);
+
+const consultarBuroConOpossum = async (identificacion) => {
+  return await BuroCreditoModel.findOne({ identificacion }).lean();
+};
+
+const buroCircuitBreaker = new CircuitBreaker(consultarBuroConOpossum, {
+  timeout: 1500, // Timeout de 1500 ms
+  errorThresholdPercentage: 50,
+  resetTimeout: 10000
+});
+
+buroCircuitBreaker.fallback((identificacion, error) => {
+  console.warn(`⚡ [CircuitBreaker] Buró no disponible o timeout para ${identificacion}. Error: ${error.message}. Activando Fallback...`);
+  return { esFallback: true }; // Señalizamos que es un fallback
+});
 
 // ----------------------------------------------------------------------
 // ENDPOINT OAUTH2 CLIENT CREDENTIALS (Spec 0 / Gateway)
@@ -101,7 +134,19 @@ app.post(
 
       // 1. CONSULTAR EN MONGODB ATLAS (resuelve_db) AMBAS COLECCIONES
       const historial = await ClienteHistorialModel.findOne({ identificacion: cedula }).lean();
-      const buro = await BuroCreditoModel.findOne({ identificacion: cedula }).lean();
+      
+      let buro = null;
+      let esFallback = false;
+      try {
+        buro = await buroCircuitBreaker.fire(cedula);
+        if (buro?.esFallback) {
+          esFallback = true;
+          buro = null;
+        }
+      } catch (err) {
+        esFallback = true;
+        buro = null;
+      }
 
       let decision = 'APROBADO';
       let motivo = 'Cumple reglas de score y capacidad de pago';
@@ -116,15 +161,21 @@ app.post(
       if (tieneMora) {
         decision = 'RECHAZADO';
         motivo = 'Mora vigente en historial interno o buró';
-      } else if (buro?.score !== undefined && buro?.score !== null && buro.score < 700) {
+      } else if (!esFallback && buro?.score !== undefined && buro?.score !== null && buro.score < 700) {
         decision = 'RECHAZADO';
         motivo = 'Score de buró de crédito insuficiente';
       } else if (montoNum > 5000) {
         decision = 'REVISION_MANUAL';
         motivo = 'Requiere aprobación por monto elevado';
-      } else if (!historial && !buro) {
+      } else if (!historial && !buro && !esFallback) {
         decision = 'RECHAZADO';
         motivo = 'La identificación no se encuentra registrada en el sistema ni en el Buró de Crédito';
+      } else if (!historial && esFallback) {
+        decision = 'REVISION_MANUAL';
+        motivo = 'Cliente nuevo sin historial interno y buró no disponible';
+      } else if (esFallback) {
+        decision = 'APROBADO';
+        motivo = 'Aprobado basado 100% en historial interno (Fallback Buró)';
       }
 
       const idEvaluacion = uuidv4();
@@ -245,8 +296,29 @@ app.get(['/v1/score/:identificacion', '/api/score/:identificacion'], async (req,
 
 app.get(['/v1/auditoria/evaluaciones', '/api/auditoria/evaluaciones'], async (req, res) => {
   try {
-    const registros = await AuditoriaModel.find().sort({ fecha: -1 }).limit(50).lean();
-    return res.status(200).json({ total: registros.length, items: registros });
+    const { page = 1, limit = 10, size, fechaDesde, fechaHasta, decision } = req.query;
+    const limitNum = parseInt(size || limit, 10) || 10;
+    const pageNum = parseInt(page, 10) || 1;
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = {};
+    if (decision) {
+      query.decision = decision;
+    }
+    if (fechaDesde || fechaHasta) {
+      query.fecha = {};
+      if (fechaDesde) query.fecha.$gte = new Date(fechaDesde);
+      if (fechaHasta) query.fecha.$lte = new Date(fechaHasta);
+    }
+
+    const [total, data] = await Promise.all([
+      AuditoriaModel.countDocuments(query),
+      AuditoriaModel.find(query).sort({ fecha: -1 }).skip(skip).limit(limitNum).lean()
+    ]);
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return res.status(200).json({ total, page: pageNum, limit: limitNum, totalPages, data });
   } catch (error) {
     return res.status(500).json({ codigo: 'ERROR_AUDITORIA', mensaje: error.message });
   }
@@ -282,4 +354,8 @@ async function iniciarServidor() {
   }
 }
 
-iniciarServidor();
+if (process.env.NODE_ENV !== 'test') {
+  iniciarServidor();
+}
+
+export default app;

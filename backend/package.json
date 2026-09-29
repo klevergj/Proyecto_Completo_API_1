@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --passWithNoTests",
     "test:notificaciones": "node test-notificaciones.js"
   },
   "dependencies": {
@@ -14,8 +15,12 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "express-rate-limit": "^8.7.0",
+    "jest": "^30.5.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.2",
+    "opossum": "^10.0.0",
+    "supertest": "^7.3.0",
     "uuid": "^11.0.3"
   }
 }

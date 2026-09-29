@@ -18,7 +18,8 @@ export const conectarDB = async () => {
   const opcionesConexion = {
     serverSelectionTimeoutMS: 5000, // Timeout para selección de servidor (5s)
     socketTimeoutMS: 45000,         // Timeout para inactividad de socket (45s)
-    autoIndex: true
+    autoIndex: true,
+    maxPoolSize: 50
   };
 
   // Eventos de monitoreo de la conexión Mongoose

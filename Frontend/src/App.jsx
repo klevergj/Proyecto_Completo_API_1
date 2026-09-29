@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { CreditForm } from './components/CreditForm';
 import { ResultCard } from './components/ResultCard';
+import { AuditPanel } from './components/AuditPanel';
 import { evaluarCredito } from './services/apiService';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Activity, ClipboardList } from 'lucide-react';
 
 export function App() {
+  const [activeTab, setActiveTab] = useState('evaluacion');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -45,34 +47,58 @@ export function App() {
           </p>
         </div>
 
-        {/* Formulario */}
-        <CreditForm onSubmit={handleFormSubmit} isLoading={loading} />
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200">
+          <button
+            className={`flex items-center gap-2 py-3 px-6 font-medium text-sm border-b-2 ${activeTab === 'evaluacion' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            onClick={() => setActiveTab('evaluacion')}
+          >
+            <Activity className="w-4 h-4" /> Evaluación
+          </button>
+          <button
+            className={`flex items-center gap-2 py-3 px-6 font-medium text-sm border-b-2 ${activeTab === 'auditoria' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            onClick={() => setActiveTab('auditoria')}
+          >
+            <ClipboardList className="w-4 h-4" /> Auditoría
+          </button>
+        </div>
 
-        {/* Mensaje de Error de Red o Servidor */}
-        {error && (
-          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 flex items-start gap-4 text-rose-800 shadow-md">
-            <AlertCircle className="w-6 h-6 text-rose-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-grow">
-              <h4 className="font-bold text-base">Error en la Consulta</h4>
-              <p className="text-sm mt-1 text-rose-700">{error}</p>
-            </div>
-          </div>
+        {activeTab === 'evaluacion' && (
+          <>
+            {/* Formulario */}
+            <CreditForm onSubmit={handleFormSubmit} isLoading={loading} />
+
+            {/* Mensaje de Error de Red o Servidor */}
+            {error && (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 flex items-start gap-4 text-rose-800 shadow-md">
+                <AlertCircle className="w-6 h-6 text-rose-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-grow">
+                  <h4 className="font-bold text-base">Error en la Consulta</h4>
+                  <p className="text-sm mt-1 text-rose-700">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Resultado */}
+            {result && (
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Nueva Consulta
+                  </button>
+                </div>
+                <ResultCard result={result} />
+              </div>
+            )}
+          </>
         )}
 
-        {/* Resultado */}
-        {result && (
-          <div className="space-y-4">
-            <div className="flex justify-end">
-              <button
-                onClick={handleReset}
-                className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-100 transition cursor-pointer"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Nueva Consulta
-              </button>
-            </div>
-            <ResultCard result={result} />
-          </div>
+        {activeTab === 'auditoria' && (
+          <AuditPanel />
         )}
       </main>
 

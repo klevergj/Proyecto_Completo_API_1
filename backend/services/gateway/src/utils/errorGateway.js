@@ -22,7 +22,7 @@ const scopeInsuficiente = (scope) =>
   new ErrorGateway(403, "SCOPE_INSUFICIENTE", `El token no tiene el scope requerido: ${scope}`, false);
 const rutaNoEncontrada = () => new ErrorGateway(404, "RUTA_NO_ENCONTRADA", "La ruta solicitada no existe en esta version del API", false);
 const limiteTasaExcedido = () =>
-  new ErrorGateway(429, "LIMITE_TASA_EXCEDIDO", "Se excedio el limite de peticiones. Intenta nuevamente en unos segundos.", true);
+  new ErrorGateway(429, "LIMITE_TASA_EXCEDIDO", "Demasiadas solicitudes. Por favor, espere unos segundos.", true);
 const bffNoDisponible = () =>
   new ErrorGateway(502, "BFF_NO_DISPONIBLE", "El servicio no esta disponible. Intenta nuevamente en unos minutos.", true);
 const bffTimeout = () => new ErrorGateway(504, "BFF_TIMEOUT", "El servicio esta tardando mas de lo normal. Intenta nuevamente.", true);

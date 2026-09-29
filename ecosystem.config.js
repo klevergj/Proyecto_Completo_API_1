@@ -10,11 +10,11 @@ module.exports = {
       max_memory_restart: '500M',
       env: {
         NODE_ENV: 'development',
-        PORT: 3000
+        PORT: 8080
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 8080
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
@@ -25,7 +25,7 @@ module.exports = {
   deploy: {
     production: {
       user: 'ubuntu',
-      host: '3.223.71.28',
+      host: '44.197.171.122',
       ref: 'origin/main',
       repo: 'git@github.com:klevergj/Proyecto_Completo_API_1.git',
       path: '/var/www/tu-app',

@@ -5,37 +5,24 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret_key_resuelve_openapi_2026';
 
-// Rate Limiter per client_id state (In-memory)
-const rateLimitWindowMs = 60 * 1000; // 1 minuto
-const maxRequestsPerWindow = 100;
-const clientRequests = new Map();
+import rateLimit from 'express-rate-limit';
 
 /**
- * Rate Limiting Middleware por client_id
+ * Rate Limiting Middleware por client_id o IP
  */
-export const rateLimiterMiddleware = (req, res, next) => {
-  const clientId = req.user?.client_id || req.ip || 'anonymous';
-  const now = Date.now();
-
-  let clientData = clientRequests.get(clientId);
-
-  if (!clientData || now - clientData.startTime > rateLimitWindowMs) {
-    clientData = { startTime: now, count: 1 };
-    clientRequests.set(clientId, clientData);
-    return next();
-  }
-
-  clientData.count += 1;
-
-  if (clientData.count > maxRequestsPerWindow) {
-    return res.status(429).json({
+export const rateLimiterMiddleware = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 100, // Límite de 100 peticiones por ventana
+  keyGenerator: (req) => {
+    return req.user?.client_id || req.ip; // Por Client ID o IP
+  },
+  handler: (req, res) => {
+    res.status(429).json({
       codigo: 'RATE_LIMIT_EXCEEDED',
-      mensaje: `Límite de tasa excedido para el cliente '${clientId}'. Máximo ${maxRequestsPerWindow} peticiones por minuto.`
+      mensaje: `Demasiadas solicitudes. Por favor, espere unos segundos.`
     });
   }
-
-  next();
-};
+});
 
 /**
  * Middleware para validar Token JWT OAuth2 y Scopes requeridos

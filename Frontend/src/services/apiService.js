@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://44.197.171.122';
 
 let cachedToken = null;
 let tokenExpiresAt = 0;
@@ -6,33 +8,23 @@ let tokenExpiresAt = 0;
 /**
  * Solicita o retorna un Token de Acceso OAuth2 válido utilizando el flujo Client Credentials.
  */
-export const obtenerTokenOAuth = async () => {
+export const obtenerTokenOAuth = async (forceRefresh = false) => {
   const now = Date.now();
-  if (cachedToken && now < tokenExpiresAt) {
+  if (!forceRefresh && cachedToken && now < tokenExpiresAt) {
     return cachedToken;
   }
 
   try {
-    const response = await fetch(`${API_URL}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        grant_type: 'client_credentials',
-        client_id: 'frontend-tiendas',
-        client_secret: 'secret-key-resuelve'
-      }),
+    const response = await axios.post(`${API_URL}/oauth/token`, {
+      grant_type: 'client_credentials',
+      client_id: 'frontend-tiendas',
+      client_secret: 'secret-key-resuelve'
+    }, {
+      headers: { 'Content-Type': 'application/json' }
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.mensaje || `Error de autenticación OAuth2 (${response.status})`);
-    }
-
+    const data = response.data;
     cachedToken = data.access_token;
-    // Expira en Date.now() + (expires_in * 1000) - buffer de 10 seg
     tokenExpiresAt = Date.now() + ((data.expires_in || 3600) * 1000) - 10000;
     return cachedToken;
   } catch (error) {
@@ -41,73 +33,82 @@ export const obtenerTokenOAuth = async () => {
   }
 };
 
-/**
- * Envía la solicitud de evaluación de crédito al endpoint principal del backend.
- * 
- * @param {Object} datosSolicitud { identificacion, montoSolicitado, plazoMeses }
- * @returns {Promise<Object>} Resultado de la evaluación (DecisionFrontend)
- */
-export const evaluarCredito = async (datosSolicitud) => {
-  try {
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+apiClient.interceptors.request.use(
+  async (config) => {
     const token = await obtenerTokenOAuth();
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-    const payload = {
-      identificacion: String(datosSolicitud.identificacion || '').trim(),
-      montoSolicitado: Number(datosSolicitud.montoSolicitado) || 0,
-      plazoMeses: Number(datosSolicitud.plazoMeses) || 12,
-      tiendaId: datosSolicitud.tiendaId || 'TIENDA-001'
-    };
-
-    const response = await fetch(`${API_URL}/v1/evaluaciones-credito`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const msg = data.error?.message || data.mensaje || `Error en la evaluación de crédito (${response.status})`;
-      throw new Error(msg);
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Auto-refresh token if 401 Unauthorized
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        await obtenerTokenOAuth(true); // force refresh
+        return apiClient(originalRequest);
+      } catch (err) {
+        return Promise.reject(err);
+      }
+    }
+    
+    // Handle Rate Limiting
+    if (error.response?.status === 429) {
+      return Promise.reject(new Error('Demasiadas solicitudes. Por favor, espere unos segundos.'));
     }
 
-    return data;
+    const msg = error.response?.data?.error?.message || error.response?.data?.mensaje || error.message;
+    return Promise.reject(new Error(msg));
+  }
+);
+
+export const evaluarCredito = async (datosSolicitud) => {
+  const payload = {
+    identificacion: String(datosSolicitud.identificacion || '').trim(),
+    montoSolicitado: Number(datosSolicitud.montoSolicitado) || 0,
+    plazoMeses: Number(datosSolicitud.plazoMeses) || 12,
+    tiendaId: datosSolicitud.tiendaId || 'TIENDA-001'
+  };
+
+  try {
+    const response = await apiClient.post('/v1/evaluaciones-credito', payload);
+    return response.data;
   } catch (error) {
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error(`No se pudo conectar con el servidor backend en ${API_URL}. Por favor inicia el servidor backend.`);
+    if (error.message.includes('Network Error')) {
+      throw new Error(`No se pudo conectar con el servidor backend en ${API_URL}.`);
     }
     throw error;
   }
 };
 
-/**
- * Consulta el estado de una evaluación previa por su UUID.
- * 
- * @param {string} id UUID de la evaluación
- * @returns {Promise<Object>} Detalle almacenado de la evaluación
- */
 export const obtenerEvaluacion = async (id) => {
   try {
-    const token = await obtenerTokenOAuth();
+    const response = await apiClient.get(`/v1/evaluaciones-credito/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
-    const response = await fetch(`${API_URL}/v1/evaluaciones-credito/${id}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const msg = data.error?.message || data.mensaje || `No se pudo encontrar la evaluación (${response.status})`;
-      throw new Error(msg);
-    }
-
-    return data;
+export const obtenerAuditorias = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/v1/auditoria/evaluaciones', { params });
+    return response.data;
   } catch (error) {
     throw error;
   }

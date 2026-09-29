@@ -9,7 +9,8 @@ export const options = {
     { duration: '20s', target: 0 },    // Bajada rápida
   ],
   thresholds: {
-    http_req_failed: ['rate<0.15'],    // Tolerancia a fallos durante el pico < 15%
+    http_req_duration: ['p(95)<500'], // 95% de peticiones por debajo de 500ms
+    http_req_failed: ['rate<0.01'],   // Menos de 1% de errores en carga sostenida
   },
 };
 
