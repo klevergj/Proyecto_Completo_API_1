@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://44.197.171.122';
+const API_URL = import.meta.env?.VITE_API_BASE_URL || import.meta.env?.VITE_API_URL || (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL) || 'http://localhost:8080';
 
 let cachedToken = null;
 let tokenExpiresAt = 0;
@@ -29,7 +29,10 @@ export const obtenerTokenOAuth = async (forceRefresh = false) => {
     return cachedToken;
   } catch (error) {
     console.error('Error al obtener token OAuth2:', error);
-    throw new Error('No se pudo autenticar con el servidor (OAuth2). Verifica que el backend esté en ejecución.');
+    if (!error.response) {
+      throw new Error('Error de red o CORS al intentar conectar con el servidor (OAuth2). Verifica tu conexión o configuración de red.');
+    }
+    throw new Error('No se pudo autenticar con el servidor (OAuth2). Verifica que el backend esté en ejecución y los datos de autenticación sean correctos.');
   }
 };
 
@@ -55,6 +58,11 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // Network errors (no response from server)
+    if (!error.response) {
+      return Promise.reject(new Error('Error de conexión con el servidor. Verifica tu conexión a internet o los certificados si usas HTTPS.'));
+    }
     
     // Auto-refresh token if 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {

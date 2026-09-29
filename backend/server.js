@@ -21,9 +21,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecret_key_resuelve_openapi_2
 
 // 1. CONFIGURACIÓN DE CORS Y MIDDLEWARES
 app.use(cors({
-  origin: '*', // Habilitar CORS para http://localhost:5173, Postman y cualquier origen
+  origin: '*', // Habilitar CORS para cualquier origen (incluyendo móviles)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
 app.use(express.json());
