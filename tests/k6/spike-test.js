@@ -14,8 +14,8 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.API_URL || 'http://localhost:8080';
-
+//const BASE_URL = __ENV.API_URL || 'http://localhost:8080';
+const BASE_URL = __ENV.API_URL || 'https://44-207-114-218.nip.io';
 export function setup() {
   const authPayload = JSON.stringify({
     grant_type: 'client_credentials',
