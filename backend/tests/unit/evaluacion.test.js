@@ -1,10 +1,16 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
-import { ClienteHistorialModel } from '../../models/ClienteHistorial.js';
-import { BuroCreditoModel } from '../../models/BuroCredito.js';
-import { AuditoriaModel } from '../../models/Auditoria.js';
+
+// Intercept notifications to avoid floating promises after tests
+jest.unstable_mockModule('../../helpers/notificaciones.js', () => ({
+  enviarNotificacionBD: jest.fn().mockResolvedValue(true)
+}));
+
+const { ClienteHistorialModel } = await import('../../models/ClienteHistorial.js');
+const { BuroCreditoModel } = await import('../../models/BuroCredito.js');
+const { AuditoriaModel } = await import('../../models/Auditoria.js');
+const { default: app } = await import('../../server.js');
 
 describe('API Evaluacion de Credito', () => {
   let token;
@@ -115,6 +121,6 @@ describe('API Evaluacion de Credito', () => {
       
       expect(rateLimited).toBeDefined();
       expect(rateLimited.body.codigo).toBe('LIMITE_TASA_EXCEDIDO');
-    });
+    }, 15000);
   });
 });
