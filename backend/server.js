@@ -52,8 +52,8 @@ function autenticarOAuthPermisivo(req, res, next) {
 }
 
 const apiLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minuto
-  max: 10000, // Límite de 1000 peticiones
+  windowMs: 60 * 1000, // 1 minuto
+  max: 100, // Límite de 100 peticiones
   keyGenerator: (req) => {
     return req.usuario?.client_id || req.ip;
   },
